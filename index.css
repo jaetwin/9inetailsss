@@ -1,0 +1,41 @@
+@import '@fontsource/cinzel/400.css';
+@import '@fontsource/cinzel/700.css';
+@import '@fontsource/unifrakturmaguntia/400.css';
+
+@import 'tailwindcss';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #000;
+  color: #fff;
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #000; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
+/* Font helpers */
+.font-cinzel     { font-family: 'Cinzel', serif; }
+.font-fraktur    { font-family: 'UnifrakturMaguntia', cursive; }
+.font-garamond   { font-family: 'Cormorant Garamond', serif; }
+.font-bebas      { font-family: 'Bebas Neue', sans-serif; }
+.font-mono-ibm   { font-family: 'IBM Plex Mono', monospace; }
