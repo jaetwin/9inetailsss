@@ -83,7 +83,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
         <div className="relative z-10 w-full max-w-[1200px] flex flex-col md:flex-row gap-12 items-center h-full py-20">
 
-          {/* Left Side: Thumbnails + Main Image side by side */}
+          {/* Left Side: Thumbnails + Main Image */}
           <div className="w-full md:w-1/2 h-[50vh] md:h-full flex flex-row items-center justify-center gap-3">
 
             {/* Thumbnail Strip — vertical on the left */}
@@ -140,7 +140,12 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 </>
               )}
             </div>
+
+          </div>{/* End Left Side */}
+
+          {/* Right Side: Product Details */}
           <div className="w-full md:w-1/2 flex flex-col justify-center items-start text-left">
+
             <motion.div
               className="font-sans text-[13px] text-[var(--blood)] tracking-[0.3em] mb-4 uppercase"
               initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
@@ -223,7 +228,9 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 {sizes.length > 0 && !selectedSize ? 'SELECT A SIZE' : 'ACQUIRE'}
               </button>
             </motion.div>
-          </div>
+
+          </div>{/* End Right Side */}
+
         </div>
       </motion.div>
     </AnimatePresence>
