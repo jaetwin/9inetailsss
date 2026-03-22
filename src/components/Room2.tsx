@@ -27,13 +27,18 @@ function shopifyToDisplayProduct(p: ShopifyProduct, idx: number) {
   }).format(Number(amount));
 
   return {
-    id: idx + 1,        // numeric id for CartContext compatibility
+    id: idx + 1,
     name: p.title.toUpperCase(),
     price,
     rot: ROTS[idx % ROTS.length],
     shopifyVariantId: variant?.id,
     shopifyHandle: p.handle,
+    // Pass single image for card display
     image: p.images.edges[0]?.node.url ?? null,
+    // Pass full images array for gallery in ProductView
+    images: p.images,
+    // Pass full variants array for size selector in ProductView
+    variants: p.variants,
   };
 }
 
@@ -45,7 +50,6 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
       if (shopifyProducts.length > 0) {
         setProducts(shopifyProducts.map(shopifyToDisplayProduct));
       }
-      // If fetch returns empty (not configured), FALLBACK_PRODUCTS remain
     });
   }, []);
 
@@ -61,7 +65,6 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Main Title Background Typography */}
           <motion.h2
             className="font-gothic text-[clamp(70px,10vw,150px)] text-[var(--bone)] leading-[0.8] tracking-normal drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)] z-20 relative mb-8"
             style={{
@@ -91,16 +94,16 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
           {products.map((p, idx) => (
             <motion.div
               key={p.id}
-              className={`flex w-full items-center ${idx % 2 === 0 ? 'justify-start' : 'justify-end'}`}
+              className={`flex w-full items-center pointer-events-auto ${idx % 2 === 0 ? 'justify-start' : 'justify-end'}`}
               initial={{ opacity: 0, x: idx % 2 === 0 ? -50 : 50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
             >
               <div
-                className="w-[90vw] md:w-[48vw] lg:w-[36vw] group cursor-pointer relative"
+                className="w-[90vw] md:w-[48vw] lg:w-[36vw] group cursor-pointer relative pointer-events-auto"
                 style={{ transform: `rotate(${p.rot}deg)` }}
-                onClick={() => { console.log('CLICKED:', p); onProductClick(p); }}
+                onClick={() => onProductClick(p)}
               >
                 <div className="absolute inset-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 shadow-[inset_0_0_50px_rgba(255,238,221,0.05)] pointer-events-none z-10 clip-diagonal" />
 
