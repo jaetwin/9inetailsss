@@ -33,6 +33,7 @@ function shopifyToDisplayProduct(p: ShopifyProduct, idx: number) {
     rot: ROTS[idx % ROTS.length],
     shopifyVariantId: variant?.id,
     shopifyHandle: p.handle,
+    image: p.images.edges[0]?.node.url ?? null,
   };
 }
 
@@ -99,7 +100,7 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
               <div
                 className="w-[90vw] md:w-[48vw] lg:w-[36vw] group cursor-pointer relative"
                 style={{ transform: `rotate(${p.rot}deg)` }}
-                onClick={() => onProductClick(p)}
+                onClick={() => { console.log('CLICKED:', p); onProductClick(p); }}
               >
                 <div className="absolute inset-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 shadow-[inset_0_0_50px_rgba(255,238,221,0.05)] pointer-events-none z-10 clip-diagonal" />
 
