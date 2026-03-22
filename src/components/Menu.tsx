@@ -14,12 +14,13 @@ export default function Menu() {
     setOverlayMessage(null);
   };
 
+  // These names MUST match the switch cases and click handler below exactly
   const menuItems = [
     'COLLECTION',
     'LOOKBOOK',
     'SCRIPTURE',
     'THE LORDS PRAYER',
-    'PRAYER REQUESTS',
+    'PRAYER REQUEST',
     'MISSION',
     'ARCHIVE',
   ];
@@ -41,7 +42,8 @@ export default function Menu() {
 
   useEffect(() => {
     let interval: any;
-    if (overlayMessage === 'PRAY WITH ME') {
+    // Must match the menu item name exactly
+    if (overlayMessage === 'THE LORDS PRAYER') {
       interval = setInterval(() => {
         setActivePrayerIndex((prev) => (prev + 1) % prayers.length);
       }, 5000);
@@ -50,6 +52,7 @@ export default function Menu() {
   }, [overlayMessage, prayers.length]);
 
   const handleMenuItemClick = (item: string) => {
+    // Must match the menu item name exactly
     if (item === 'PRAYER REQUEST') {
       setIsOpen(false);
       setTimeout(() => setPrayerRequestOpen(true), 400);
@@ -84,9 +87,9 @@ export default function Menu() {
         );
       case 'MISSION':
         return (
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="font-gothic text-[clamp(60px,8vw,100px)] text-[var(--bone)] mb-12 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Reborn</h2>
-            <div className="font-serif text-[clamp(24px,3vw,32px)] tracking-wide text-[var(--parchment)] leading-relaxed space-y-10 italic">
+          <div className="max-w-4xl mx-auto text-center px-4">
+            <h2 className="font-gothic text-[clamp(40px,8vw,100px)] text-[var(--bone)] mb-12 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Reborn</h2>
+            <div className="font-serif text-[clamp(18px,3vw,32px)] tracking-wide text-[var(--parchment)] leading-relaxed space-y-10 italic">
               <p className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">We carry the weight of our own crosses; The Lord carried the weight of our sin.</p>
               <p className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">These garments are not artifacts of the past, but statements for the reborn who walk the narrow path in absolute defiance of a fallen world.</p>
               <p className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Built to remember the one who suffered the most for us.</p>
@@ -96,12 +99,12 @@ export default function Menu() {
       case 'LOOKBOOK':
         return (
           <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto gap-12">
-            <h2 className="font-gothic text-[clamp(50px,6vw,80px)] text-[var(--bone)] tracking-normal mb-8 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">Glorifying Garments</h2>
+            <h2 className="font-gothic text-[clamp(40px,6vw,80px)] text-[var(--bone)] tracking-normal mb-8 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">Glorifying Garments</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 w-full">
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className="aspect-[4/5] bg-[var(--whisper)]/5 border border-[var(--whisper)]/20 overflow-hidden relative group cursor-pointer">
                   <div className="absolute inset-0 bg-[var(--void)]/50 group-hover:bg-transparent transition-colors duration-700" />
-                  <div className="absolute bottom-6 left-6 font-sans text-[12px] text-[var(--bone)]/50 tracking-[0.2em] uppercase transition-opacity duration-500 group-hover:opacity-100">{`VISUAL 00${i}`}</div>
+                  <div className="absolute bottom-6 left-6 font-sans text-[12px] text-[var(--bone)]/50 tracking-[0.2em] uppercase">{`VISUAL 00${i}`}</div>
                 </div>
               ))}
             </div>
@@ -109,93 +112,84 @@ export default function Menu() {
         );
       case 'SCRIPTURE':
         return (
-          <div className="max-w-4xl mx-auto text-center pb-20 mt-12">
-             <h2 className="font-gothic text-[clamp(50px,7vw,90px)] text-[var(--bone)] mb-20 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Word Of The LORD</h2>
-             <div className="font-serif text-[clamp(24px,3vw,32px)] tracking-wide text-[var(--bone)] leading-relaxed space-y-16">
-                <div className="flex flex-col items-center">
-                  <div className="overflow-hidden">
-                    <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"And let us not grow weary of doing good, for in due season we will reap, if we do not give up."</motion.p>
-                  </div>
-                  <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– Galatians 6:9</motion.p>
-                </div>
-                <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                <div className="flex flex-col items-center">
-                  <div className="overflow-hidden">
-                    <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"For God gave us a spirit not of fear but of power and love and self-control."</motion.p>
-                  </div>
-                  <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– 2 Timothy 1:7</motion.p>
-                </div>
-                <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                <div className="flex flex-col items-center">
-                  <div className="overflow-hidden">
-                    <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world."</motion.p>
-                  </div>
-                  <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– John 16:33</motion.p>
-                </div>
-                <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                <div className="flex flex-col items-center">
-                  <div className="overflow-hidden">
-                    <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me."</motion.p>
-                  </div>
-                  <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– Psalm 23:4</motion.p>
-                </div>
-                <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                <div className="flex flex-col items-center">
-                  <div className="overflow-hidden">
-                    <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand."</motion.p>
-                  </div>
-                  <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– Isaiah 41:10</motion.p>
-                </div>
-             </div>
+          <div className="max-w-4xl mx-auto text-center pb-20 mt-12 px-4">
+            <h2 className="font-gothic text-[clamp(36px,7vw,90px)] text-[var(--bone)] mb-12 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Word Of The LORD</h2>
+            <div className="font-serif text-[clamp(18px,3vw,32px)] tracking-wide text-[var(--bone)] leading-relaxed space-y-12">
+              <div className="flex flex-col items-center">
+                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"And let us not grow weary of doing good, for in due season we will reap, if we do not give up."</motion.p>
+                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– Galatians 6:9</p>
+              </div>
+              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
+              <div className="flex flex-col items-center">
+                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"For God gave us a spirit not of fear but of power and love and self-control."</motion.p>
+                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– 2 Timothy 1:7</p>
+              </div>
+              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
+              <div className="flex flex-col items-center">
+                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world."</motion.p>
+                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– John 16:33</p>
+              </div>
+              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
+              <div className="flex flex-col items-center">
+                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me."</motion.p>
+                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– Psalm 23:4</p>
+              </div>
+              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
+              <div className="flex flex-col items-center">
+                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you."</motion.p>
+                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– Isaiah 41:10</p>
+              </div>
+            </div>
           </div>
         );
-      case 'PRAY WITH ME':
+      // Must match menu item name exactly
+      case 'THE LORDS PRAYER':
         return (
-          <div className="max-w-4xl mx-auto text-center flex flex-col items-center justify-center min-h-[50vh]">
-             <h2 className="font-gothic text-[clamp(40px,6vw,80px)] text-[var(--bone)] mb-16 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Lords Prayer.</h2>
-             <div className="relative w-full h-[200px] flex items-center justify-center">
-               <AnimatePresence mode="wait">
-                 <motion.div
-                   key={activePrayerIndex}
-                   initial={{ opacity: 0, y: 10, filter: 'blur(10px)' }}
-                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                   exit={{ opacity: 0, y: -10, filter: 'blur(10px)' }}
-                   transition={{ duration: .5, ease: 'easeInOut' }}
-                   className="absolute inset-0 flex items-center justify-center"
-                 >
-                   <p className="font-serif italic text-[clamp(20px,3vw,30px)] text-[var(--parchment)] leading-[1.8] drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">
-                     "{prayers[activePrayerIndex]}"
-                   </p>
-                 </motion.div>
-               </AnimatePresence>
-             </div>
-             <div className="mt-16 flex gap-3">
-               {prayers.map((_, idx) => (
-                 <div
-                   key={idx}
-                   className={`h-[2px] transition-all duration-1000 ${idx === activePrayerIndex ? 'w-8 bg-[var(--bone)] shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'w-2 bg-[var(--whisper)]/30'}`}
-                 />
-               ))}
-             </div>
+          <div className="max-w-4xl mx-auto text-center flex flex-col items-center justify-center min-h-[50vh] px-4">
+            <h2 className="font-gothic text-[clamp(32px,6vw,80px)] text-[var(--bone)] mb-12 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Lords Prayer.</h2>
+            <div className="relative w-full h-[200px] flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activePrayerIndex}
+                  initial={{ opacity: 0, y: 10, filter: 'blur(10px)' }}
+                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                  exit={{ opacity: 0, y: -10, filter: 'blur(10px)' }}
+                  transition={{ duration: .5, ease: 'easeInOut' }}
+                  className="absolute inset-0 flex items-center justify-center px-4"
+                >
+                  <p className="font-serif italic text-[clamp(18px,3vw,30px)] text-[var(--parchment)] leading-[1.8] drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">
+                    "{prayers[activePrayerIndex]}"
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            <div className="mt-12 flex gap-3 flex-wrap justify-center">
+              {prayers.map((_, idx) => (
+                <div
+                  key={idx}
+                  className={`h-[2px] transition-all duration-1000 ${idx === activePrayerIndex ? 'w-8 bg-[var(--bone)] shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'w-2 bg-[var(--whisper)]/30'}`}
+                />
+              ))}
+            </div>
           </div>
         );
       case 'ARCHIVE':
         return (
-          <div className="max-w-5xl mx-auto w-full">
-             <h2 className="font-gothic text-[clamp(50px,6vw,80px)] text-[var(--bone)] mb-20 tracking-normal border-b border-[var(--whisper)]/20 pb-10 text-center drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">Past Relics</h2>
-             <div className="flex flex-col gap-10">
-               {[
-                 { year: 'MMXXIV', title: 'THE FALL', status: 'UNAVAILABLE' },
-                 { year: 'MMXXIII', title: 'GENESIS', status: 'UNAVAILABLE' },
-                 { year: 'MMXXII', title: 'PRE-EMPTIVE', status: 'RESTRICTED' }
-               ].map((item, i) => (
-                 <div key={i} className="flex justify-between items-center py-8 border-b border-[var(--whisper)]/10 group cursor-pointer hover:border-[var(--bone)] transition-colors duration-500">
-                    <div className="font-sans text-[16px] text-[var(--faded)] tracking-[0.2em] w-32 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{item.year}</div>
-                    <div className="font-bebas text-[clamp(30px,4vw,44px)] text-[var(--bone)] tracking-[0.05em] flex-1 opacity-50 group-hover:opacity-100 transition-opacity duration-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{item.title}</div>
-                    <div className="font-sans text-[13px] text-[var(--blood)] tracking-[0.3em] font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{item.status}</div>
-                 </div>
-               ))}
-             </div>
+          <div className="max-w-5xl mx-auto w-full px-4">
+            <h2 className="font-gothic text-[clamp(36px,6vw,80px)] text-[var(--bone)] mb-12 tracking-normal border-b border-[var(--whisper)]/20 pb-8 text-center drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">Past Relics</h2>
+            <div className="flex flex-col gap-6">
+              {[
+                { year: 'MMXXIV', title: 'THE FALL', status: 'UNAVAILABLE' },
+                { year: 'MMXXIII', title: 'GENESIS', status: 'UNAVAILABLE' },
+                { year: 'MMXXII', title: 'PRE-EMPTIVE', status: 'RESTRICTED' }
+              ].map((item, i) => (
+                <div key={i} className="flex justify-between items-center py-6 border-b border-[var(--whisper)]/10 group cursor-pointer hover:border-[var(--bone)] transition-colors duration-500">
+                  <div className="font-sans text-[13px] md:text-[16px] text-[var(--faded)] tracking-[0.2em] w-24 md:w-32">{item.year}</div>
+                  <div className="font-bebas text-[clamp(24px,4vw,44px)] text-[var(--bone)] tracking-[0.05em] flex-1 opacity-50 group-hover:opacity-100 transition-opacity duration-500">{item.title}</div>
+                  <div className="font-sans text-[11px] md:text-[13px] text-[var(--blood)] tracking-[0.3em] font-bold">{item.status}</div>
+                </div>
+              ))}
+            </div>
           </div>
         );
     }
@@ -204,7 +198,7 @@ export default function Menu() {
   return (
     <>
       <button
-        className="fixed top-7 right-8 z-[10001] w-5 h-5 focus:outline-none"
+        className="fixed top-7 right-8 z-[10001] w-5 h-5 focus:outline-none pointer-events-auto"
         onClick={toggleMenu}
         aria-label="Toggle Menu"
       >
@@ -217,7 +211,7 @@ export default function Menu() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed top-0 right-0 w-[min(380px,90vw)] h-screen border-l border-[var(--iron)] pt-24 px-12 pb-12 z-[10000] overflow-hidden shadow-[-20px_0_50px_rgba(0,0,0,0.8)]"
+            className="fixed top-0 right-0 w-[min(380px,90vw)] h-screen border-l border-[var(--iron)] pt-20 px-8 md:px-12 pb-12 z-[10000] overflow-y-auto shadow-[-20px_0_50px_rgba(0,0,0,0.8)]"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -229,8 +223,8 @@ export default function Menu() {
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--abyss)] via-[var(--abyss)]/95 to-[var(--abyss)]/90 backdrop-blur-md" />
 
-            <div className="relative z-10 flex flex-col h-full overflow-y-auto">
-              <div className="flex flex-col gap-6">
+            <div className="relative z-10 flex flex-col min-h-full">
+              <div className="flex flex-col gap-4 md:gap-6">
                 {menuItems.map((item, i) => (
                   <motion.div
                     key={item}
@@ -239,7 +233,7 @@ export default function Menu() {
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: 'easeOut' }}
                     onClick={() => handleMenuItemClick(item)}
-                    className="group relative cursor-pointer font-sans text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-50 hover:opacity-100 transition-all duration-500 uppercase pb-2"
+                    className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-50 active:opacity-100 hover:opacity-100 transition-all duration-300 uppercase pb-2 pointer-events-auto"
                   >
                     {item}
                     {item === 'PRAYER REQUEST' && (
@@ -263,16 +257,16 @@ export default function Menu() {
                     setIsOpen(false);
                     setTimeout(() => setIsCheckoutOpen(true), 100);
                   }}
-                  className="group relative cursor-pointer font-sans text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-35 hover:opacity-100 transition-all duration-500 flex items-center justify-between pb-2 uppercase"
+                  className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-35 active:opacity-100 hover:opacity-100 transition-all duration-300 flex items-center justify-between pb-2 uppercase pointer-events-auto"
                 >
                   CART
-                  <span className="font-sans text-[16px] text-[var(--faded)] tracking-[0.1em] mt-2">({cartItems.length})</span>
+                  <span className="font-sans text-[14px] md:text-[16px] text-[var(--faded)] tracking-[0.1em] mt-2">({cartItems.length})</span>
                   <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                 </motion.div>
               </div>
 
               <motion.div
-                className="mt-auto flex flex-col gap-2 font-sans text-[11px] tracking-[0.4em] text-[var(--whisper)] opacity-60 uppercase"
+                className="mt-auto pt-8 flex flex-col gap-2 font-sans text-[11px] tracking-[0.4em] text-[var(--whisper)] opacity-60 uppercase"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
               >
                 <span>9INETAILSS</span>
@@ -286,7 +280,7 @@ export default function Menu() {
       <AnimatePresence>
         {overlayMessage && (
           <motion.div
-            className="fixed inset-0 z-[99999] flex flex-col justify-between p-12 pointer-events-auto overflow-hidden"
+            className="fixed inset-0 z-[99999] flex flex-col p-6 md:p-12 pointer-events-auto overflow-y-auto"
             initial={{ opacity: 0, filter: 'blur(20px)', scale: 1.05 }}
             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
             exit={{ opacity: 0, filter: 'blur(20px)', scale: 0.95 }}
@@ -298,20 +292,20 @@ export default function Menu() {
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/90 to-[var(--void)]/80 backdrop-blur-xl" />
 
-            <div className="relative z-20 flex justify-start w-full">
-               <div
-                  className="cursor-pointer group p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] transition-colors duration-500"
-                  onClick={() => setOverlayMessage(null)}
-                >
-                  <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] transition-colors uppercase">
-                    RETURN TO SANCTUARY
-                  </div>
+            <div className="relative z-20 flex justify-start w-full mb-8 flex-shrink-0">
+              <div
+                className="cursor-pointer group p-3 md:p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] active:bg-[var(--bone)] transition-colors duration-300 pointer-events-auto"
+                onClick={() => setOverlayMessage(null)}
+              >
+                <div className="font-sans text-[12px] md:text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] active:text-[var(--void)] transition-colors uppercase">
+                  RETURN TO SANCTUARY
                 </div>
+              </div>
             </div>
 
-            <div className="relative z-10 flex-1 flex flex-col w-full mt-12 mb-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+            <div className="relative z-10 flex-1 w-full">
               <motion.div
-                className="w-full m-auto"
+                className="w-full"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.0, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
@@ -319,13 +313,10 @@ export default function Menu() {
                 {renderMenuContent()}
               </motion.div>
             </div>
-
-            <div className="relative z-20 w-full" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Prayer Request Modal */}
       <PrayerRequest
         isOpen={prayerRequestOpen}
         onClose={() => setPrayerRequestOpen(false)}
