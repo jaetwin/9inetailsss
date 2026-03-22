@@ -87,11 +87,10 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
         transition={{ duration: 2.2, ease: [0.76, 0, 0.24, 1] }}
         style={{ perspective: 1200 }}
       >
-        <div className="absolute inset-0 pointer-events-none" />
         <img 
           src={tailLogo} 
           alt="9ineTailss" 
-          className="absolute top-[42%] right-[-3%] translate-x-1/2 -translate-y-1/2 w-[clamp(300px,50vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10" 
+          className="absolute top-[40%] right-[-3%] translate-x-1/2 -translate-y-1/2 w-[clamp(180px,40vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10" 
         />
         <motion.div 
           className="absolute right-0 top-0 bottom-0 w-[1px] bg-[#ffeedd]"
@@ -111,11 +110,10 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
         transition={{ duration: 2.2, ease: [0.76, 0, 0.24, 1] }}
         style={{ perspective: 1200 }}
       >
-        <div className="absolute inset-0 pointer-events-none" />
         <img 
           src={tailLogo} 
           alt="9ineTailss" 
-          className="absolute top-[42%] left-[3%] -translate-x-1/2 -translate-y-1/2 w-[clamp(300px,50vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10" 
+          className="absolute top-[40%] left-[3%] -translate-x-1/2 -translate-y-1/2 w-[clamp(180px,40vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10" 
         />
         <motion.div 
           className="absolute left-0 top-0 bottom-0 w-[1px] bg-[#ffeedd]"
@@ -129,13 +127,13 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
 
       {/* Daily Verse + Enter Button */}
       <motion.div 
-     className="absolute top-[68%] left-1/2 -translate-x-1/2 pointer-events-none z-[9995] flex flex-col items-center gap-6 w-full max-w-[500px] px-8"
+        className="absolute top-[62%] sm:top-[68%] left-1/2 -translate-x-1/2 pointer-events-none z-[9995] flex flex-col items-center gap-4 w-full max-w-[500px] px-6"
         animate={{ opacity: isOpen ? 0 : 1, scale: isOpen ? 1.1 : 1 }}
         transition={{ duration: 0.6 }}
       >
         {/* Enter Button */}
         {active || progress < 100 ? (
-          <div className="font-sans text-[13px] tracking-[0.4em] text-[var(--faded)] px-12 py-5 uppercase animate-pulse">
+          <div className="font-sans text-[11px] sm:text-[13px] tracking-[0.4em] text-[var(--faded)] px-8 sm:px-12 py-4 sm:py-5 uppercase animate-pulse">
             FORMING COVENANT... {Math.round(progress)}%
           </div>
         ) : (
@@ -146,31 +144,26 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
               color: ["rgba(255,238,221,0.6)", "rgba(255,238,221,1)", "rgba(255,238,221,0.6)"]
             }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-auto bg-[var(--void)] border border-[var(--whisper)]/40 font-sans text-[13px] tracking-[0.4em] uppercase px-12 py-5 hover:bg-[var(--bone)] hover:!text-[var(--void)] hover:!shadow-[0_0_50px_rgba(255,255,255,0.4)] transition-all duration-700 cursor-pointer hover:tracking-[0.5em]"
+            className="pointer-events-auto bg-[var(--void)] border border-[var(--whisper)]/40 font-sans text-[11px] sm:text-[13px] tracking-[0.3em] sm:tracking-[0.4em] uppercase px-8 sm:px-12 py-4 sm:py-5 hover:bg-[var(--bone)] hover:!text-[var(--void)] transition-all duration-700 cursor-pointer"
           >
             ENTER SANCTUARY
           </motion.button>
         )}
 
         {/* Divider */}
-        <motion.div
-          className="w-[1px] h-6 bg-[var(--whisper)]/30"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, delay: 0.8 }}
-        />
+        <div className="w-[1px] h-4 bg-[var(--whisper)]/30" />
 
         {/* Daily Verse */}
         <motion.div
-          className="text-center"
+          className="text-center px-2"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.5 }}
         >
-          <p className="font-serif italic text-[13px] text-white/80 leading-relaxed mb-2">
+          <p className="font-serif italic text-[11px] sm:text-[13px] text-white/80 leading-relaxed mb-1">
             "{verse.text}"
           </p>
-          <p className="font-sans text-[10px] tracking-[0.3em] text-white/50 uppercase">
+          <p className="font-sans text-[9px] sm:text-[10px] tracking-[0.3em] text-white/50 uppercase">
             — {verse.ref}
           </p>
         </motion.div>
