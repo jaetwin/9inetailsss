@@ -133,33 +133,10 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
         animate={{ opacity: isOpen ? 0 : 1, scale: isOpen ? 1.1 : 1 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Daily Verse */}
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.5, delay: 0.5 }}
-        >
-          <p className="font-serif italic text-[13px] text-[var(--parchment)]/60 leading-relaxed mb-2">
-            "{verse.text}"
-          </p>
-          <p className="font-sans text-[10px] tracking-[0.3em] text-[var(--faded)]/50 uppercase">
-            — {verse.ref}
-          </p>
-        </motion.div>
-
-        {/* Divider */}
-        <motion.div
-          className="w-[1px] h-6 bg-[var(--whisper)]/20"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, delay: 0.8 }}
-        />
-
         {/* Enter Button */}
         {active || progress < 100 ? (
           <div className="font-sans text-[13px] tracking-[0.4em] text-[var(--faded)] px-12 py-5 uppercase animate-pulse">
-            LOADING... {Math.round(progress)}%
+            FORMING COVENANT... {Math.round(progress)}%
           </div>
         ) : (
           <motion.button
@@ -174,6 +151,29 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
             ENTER SANCTUARY
           </motion.button>
         )}
+
+        {/* Divider */}
+        <motion.div
+          className="w-[1px] h-6 bg-[var(--whisper)]/30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5, delay: 0.8 }}
+        />
+
+        {/* Daily Verse */}
+        <motion.div
+          className="text-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.5, delay: 0.5 }}
+        >
+          <p className="font-serif italic text-[13px] text-white/80 leading-relaxed mb-2">
+            "{verse.text}"
+          </p>
+          <p className="font-sans text-[10px] tracking-[0.3em] text-white/50 uppercase">
+            — {verse.ref}
+          </p>
+        </motion.div>
       </motion.div>
 
     </div>
