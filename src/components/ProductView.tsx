@@ -65,7 +65,10 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    // Only lock body scroll on desktop — on mobile we need it to scroll
+    if (window.innerWidth >= 768) {
+      document.body.style.overflow = 'hidden';
+    }
     setSelectedImageIdx(0);
     setSelectedSize(null);
     setSelectedColor(null);
