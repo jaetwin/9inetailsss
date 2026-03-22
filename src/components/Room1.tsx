@@ -129,7 +129,7 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
 
       {/* Daily Verse + Enter Button */}
       <motion.div 
-        className="absolute top-[60%] left-1/2 -translate-x-1/2 pointer-events-none z-[9995] flex flex-col items-center gap-6 w-full max-w-[500px] px-8"
+     className="absolute top-[68%] left-1/2 -translate-x-1/2 pointer-events-none z-[9995] flex flex-col items-center gap-6 w-full max-w-[500px] px-8"
         animate={{ opacity: isOpen ? 0 : 1, scale: isOpen ? 1.1 : 1 }}
         transition={{ duration: 0.6 }}
       >
