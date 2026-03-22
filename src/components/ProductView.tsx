@@ -98,7 +98,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                   <div
                     key={i}
                     onClick={() => setSelectedImageIdx(i)}
-                    className={`w-10 h-10 border cursor-pointer overflow-hidden transition-all duration-300 flex-shrink-0 bg-[#1a1a1a] ${
+                    className={`w-10 h-10 border cursor-pointer overflow-hidden transition-all duration-300 flex-shrink-0 bg-[#1c1c1c] ${
                       i === selectedImageIdx
                         ? 'border-[var(--bone)] opacity-100'
                         : 'border-[var(--whisper)]/30 opacity-40 hover:opacity-70'
@@ -107,8 +107,8 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                     <img
                       src={img.url}
                       alt={img.altText}
-                      className="w-full h-full object-contain mix-blend-multiply"
-                      style={{ background: '#1a1a1a' }}
+                      className="w-full h-full object-contain"
+                      style={{ background: '#1c1c1c' }}
                     />
                   </div>
                 ))}
@@ -127,8 +127,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 <img
                   src={imageUrl}
                   alt={imageAlt}
-                  className="absolute inset-0 w-full h-full object-contain mix-blend-multiply"
-                  style={{ background: '#111111' }}
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               ) : (
                 <>
