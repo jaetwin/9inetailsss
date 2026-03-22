@@ -116,12 +116,9 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
             )}
 
             {/* Main Image Frame */}
-            <motion.div
+            <div
               className="flex-1 aspect-[3/4] glass-panel clip-diagonal border border-[var(--whisper)] flex items-center justify-center relative overflow-hidden"
-              style={{ background: '#111111' }}
-              initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
-              animate={{ opacity: 1, scale: 1, rotate: product.rot || 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+              style={{ background: '#111111', transform: `rotate(${product.rot || 0}deg)` }}
             >
               {imageUrl ? (
                 <AnimatePresence mode="wait">
@@ -142,10 +139,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                   <div className="font-sans text-[12px] tracking-[0.3em] text-[var(--faded)] -rotate-90 uppercase">AESTHETIC DECAY</div>
                 </>
               )}
-            </motion.div>
-          </div>
-
-          {/* Right Side: Product Details */}
+            </div>
           <div className="w-full md:w-1/2 flex flex-col justify-center items-start text-left">
             <motion.div
               className="font-sans text-[13px] text-[var(--blood)] tracking-[0.3em] mb-4 uppercase"
@@ -166,14 +160,14 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               initial={{ width: 0 }} animate={{ width: 48 }} transition={{ delay: 0.4 }}
             />
 
-            <div className="font-serif italic font-light text-[22px] text-[var(--parchment)] leading-[1.8] max-w-[450px] mb-8 flex flex-wrap overflow-hidden">
+            <div className="font-serif italic font-light text-[15px] text-[var(--parchment)] leading-[1.8] max-w-[450px] mb-8 overflow-y-auto max-h-[130px] pr-2">
               <motion.span
                 initial={{ y: "100%", opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
                 className="inline-block"
               >
-                Designed to honor the LORD in everything.
+                {product.description || 'Designed to honor the LORD in everything.'}
               </motion.span>
             </div>
 
