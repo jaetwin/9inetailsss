@@ -83,43 +83,22 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
         <div className="relative z-10 w-full max-w-[1200px] flex flex-col md:flex-row gap-12 items-center h-full py-20">
 
-          {/* Left Side: Image + Thumbnails */}
-          <div className="w-full md:w-1/2 h-[50vh] md:h-full flex flex-col items-center justify-center gap-4">
+          {/* Left Side: Thumbnails + Main Image side by side */}
+          <div className="w-full md:w-1/2 h-[50vh] md:h-full flex flex-row items-center justify-center gap-3">
 
-            {/* Main Image Frame */}
-            <motion.div
-              className="w-[75%] aspect-[3/4] glass-panel clip-diagonal border border-[var(--whisper)] flex items-center justify-center relative overflow-hidden"
-              initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
-              animate={{ opacity: 1, scale: 1, rotate: product.rot || 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-            >
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={imageAlt}
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
-              ) : (
-                <>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[var(--void)] to-[var(--ash)] opacity-30" />
-                  <div className="font-sans text-[12px] tracking-[0.3em] text-[var(--faded)] -rotate-90 uppercase">AESTHETIC DECAY</div>
-                </>
-              )}
-            </motion.div>
-
-            {/* Thumbnail Strip */}
+            {/* Thumbnail Strip — vertical on the left */}
             {images.length > 1 && (
               <motion.div
-                className="flex gap-2 mt-2"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-2 flex-shrink-0"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
               >
                 {images.map((img, i) => (
                   <div
                     key={i}
                     onClick={() => setSelectedImageIdx(i)}
-                    className={`w-12 h-12 border cursor-pointer overflow-hidden transition-all duration-300 ${
+                    className={`w-10 h-10 border cursor-pointer overflow-hidden transition-all duration-300 flex-shrink-0 bg-[#1a1a1a] ${
                       i === selectedImageIdx
                         ? 'border-[var(--bone)] opacity-100'
                         : 'border-[var(--whisper)]/30 opacity-40 hover:opacity-70'
@@ -128,12 +107,36 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                     <img
                       src={img.url}
                       alt={img.altText}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain mix-blend-multiply"
+                      style={{ background: '#1a1a1a' }}
                     />
                   </div>
                 ))}
               </motion.div>
             )}
+
+            {/* Main Image Frame */}
+            <motion.div
+              className="flex-1 aspect-[3/4] glass-panel clip-diagonal border border-[var(--whisper)] flex items-center justify-center relative overflow-hidden"
+              style={{ background: '#111111' }}
+              initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
+              animate={{ opacity: 1, scale: 1, rotate: product.rot || 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
+            >
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={imageAlt}
+                  className="absolute inset-0 w-full h-full object-contain mix-blend-multiply"
+                  style={{ background: '#111111' }}
+                />
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-[var(--void)] to-[var(--ash)] opacity-30" />
+                  <div className="font-sans text-[12px] tracking-[0.3em] text-[var(--faded)] -rotate-90 uppercase">AESTHETIC DECAY</div>
+                </>
+              )}
+            </motion.div>
           </div>
 
           {/* Right Side: Product Details */}
@@ -158,7 +161,12 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
             />
 
             <div className="font-serif italic font-light text-[22px] text-[var(--parchment)] leading-[1.8] max-w-[450px] mb-8 flex flex-wrap overflow-hidden">
-              <motion.span initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }} className="inline-block">
+              <motion.span
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="inline-block"
+              >
                 Designed to honor the LORD in everything.
               </motion.span>
             </div>
