@@ -8,8 +8,6 @@ interface ProductViewProps {
 }
 
 // ─── Size Guide Parser ───────────────────────────────────────────────────────
-// Detects "Size guide LENGTH (cm) WIDTH (cm) S 69.9 45.7 ..." pattern
-// and returns { mainText, sizeRows } where sizeRows is a parsed table
 function parseDescription(description: string) {
   if (!description) return { mainText: '', sizeRows: null };
 
@@ -19,15 +17,12 @@ function parseDescription(description: string) {
   const mainText = description.slice(0, guideIndex).trim();
   const guideText = description.slice(guideIndex);
 
-  // Extract header columns e.g. LENGTH (cm) WIDTH (cm)
   const headerMatch = guideText.match(/Size guide\s+((?:[A-Z]+\s*(?:\([^)]*\))?\s*)+)/);
   if (!headerMatch) return { mainText, sizeRows: null };
 
   const headerStr = headerMatch[1].trim();
-  // Split header into columns: ["LENGTH (cm)", "WIDTH (cm)"]
   const headers = headerStr.match(/[A-Z]+(?:\s*\([^)]*\))?/g) ?? [];
 
-  // After the header, parse rows like "S 69.9 45.7"
   const afterHeader = guideText.slice(guideText.indexOf(headerStr) + headerStr.length);
   const SIZES = ['3XL', '2XL', 'XL', 'L', 'M', 'S', 'XS', 'XXL', 'XXXL'];
   const rowRegex = new RegExp(`(${SIZES.join('|')})\\s+([\\d.]+(?:\\s+[\\d.]+)*)`, 'g');
@@ -35,28 +30,45 @@ function parseDescription(description: string) {
   const sizeRows: { size: string; values: string[] }[] = [];
   let match;
   while ((match = rowRegex.exec(afterHeader)) !== null) {
-    const size = match[1];
-    const values = match[2].trim().split(/\s+/);
-    sizeRows.push({ size, values });
+    sizeRows.push({ size: match[1], values: match[2].trim().split(/\s+/) });
   }
 
-  // Sort by size order
   const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL'];
   sizeRows.sort((a, b) => sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size));
 
   return { mainText, sizeRows: sizeRows.length > 0 ? { headers, rows: sizeRows } : null };
 }
 
+// ─── Color name to CSS color ─────────────────────────────────────────────────
+function colorToCSS(colorName: string): string {
+  const map: Record<string, string> = {
+    black: '#1a1a1a',
+    white: '#f0ece4',
+    grey: '#888888',
+    gray: '#888888',
+    red: '#8b1a1a',
+    navy: '#1a2340',
+    cream: '#f5f0e8',
+    tan: '#c4a882',
+    brown: '#5c3d2e',
+    green: '#2d4a2d',
+    blue: '#1a3a5c',
+  };
+  return map[colorName.toLowerCase()] ?? '#888888';
+}
+
 export default function ProductView({ product, onClose }: ProductViewProps) {
   const { addToCart, setIsCheckoutOpen } = useCart();
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     setSelectedImageIdx(0);
     setSelectedSize(null);
+    setSelectedColor(null);
     setShowSizeGuide(false);
     return () => {
       document.body.style.overflow = 'auto';
@@ -73,19 +85,50 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const productPrice = product.price;
 
   const variants = product.variants?.edges?.map((e: any) => e.node) ?? [];
-  const sizes: string[] = [];
+
+  // Extract unique colors
+  const colors: string[] = [];
   variants.forEach((v: any) => {
-    const sizeOption = v.selectedOptions?.find((o: any) => o.name === 'Size');
-    if (sizeOption && !sizes.includes(sizeOption.value)) {
-      sizes.push(sizeOption.value);
+    const colorOption = v.selectedOptions?.find((o: any) => o.name === 'Color');
+    if (colorOption && !colors.includes(colorOption.value)) {
+      colors.push(colorOption.value);
     }
   });
 
-  const selectedVariant = selectedSize
-    ? variants.find((v: any) =>
-        v.selectedOptions?.some((o: any) => o.name === 'Size' && o.value === selectedSize)
+  // Extract sizes filtered by selected color
+  const sizes: string[] = [];
+  variants.forEach((v: any) => {
+    const colorOption = v.selectedOptions?.find((o: any) => o.name === 'Color');
+    const sizeOption = v.selectedOptions?.find((o: any) => o.name === 'Size');
+    if (sizeOption) {
+      const colorMatches = !selectedColor || colorOption?.value === selectedColor;
+      if (colorMatches && !sizes.includes(sizeOption.value)) {
+        sizes.push(sizeOption.value);
+      }
+    }
+  });
+
+  // Find the exact matching variant
+  const selectedVariant = variants.find((v: any) => {
+    const colorOption = v.selectedOptions?.find((o: any) => o.name === 'Color');
+    const sizeOption = v.selectedOptions?.find((o: any) => o.name === 'Size');
+    const colorMatch = !selectedColor || colorOption?.value === selectedColor;
+    const sizeMatch = !selectedSize || sizeOption?.value === selectedSize;
+    return colorMatch && sizeMatch;
+  }) ?? variants[0];
+
+  // Stock status for the selected variant
+  const isAvailable = selectedVariant?.availableForSale ?? true;
+  const allVariantsForColor = selectedColor
+    ? variants.filter((v: any) =>
+        v.selectedOptions?.find((o: any) => o.name === 'Color')?.value === selectedColor
       )
-    : variants[0];
+    : variants;
+  const availableCount = allVariantsForColor.filter((v: any) => v.availableForSale).length;
+  const isLowStock = availableCount > 0 && availableCount <= 3;
+  const isSoldOut = availableCount === 0;
+
+  const needsSelection = (colors.length > 0 && !selectedColor) || (sizes.length > 0 && !selectedSize);
 
   const { mainText, sizeRows } = parseDescription(product.description ?? '');
 
@@ -178,6 +221,18 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                   <div className="font-sans text-[12px] tracking-[0.3em] text-[var(--faded)] -rotate-90 uppercase">AESTHETIC DECAY</div>
                 </>
               )}
+
+              {/* Stock badge on image */}
+              {isSoldOut && (
+                <div className="absolute top-3 right-3 bg-[var(--void)]/80 border border-[var(--whisper)]/30 px-2 py-1">
+                  <span className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase">Sold Out</span>
+                </div>
+              )}
+              {isLowStock && !isSoldOut && (
+                <div className="absolute top-3 right-3 bg-[var(--void)]/80 border border-[var(--blood)]/50 px-2 py-1">
+                  <span className="font-sans text-[10px] tracking-[0.2em] text-[var(--blood)] uppercase">Low Stock</span>
+                </div>
+              )}
             </div>
 
           </div>{/* End Left Side */}
@@ -218,7 +273,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </div>
             )}
 
-            {/* Size Guide Toggle + Table */}
+            {/* Size Guide */}
             {sizeRows && (
               <motion.div
                 className="w-full mb-6"
@@ -231,7 +286,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                   SIZE GUIDE
                   <span className="text-[10px]">{showSizeGuide ? '▲' : '▼'}</span>
                 </button>
-
                 <AnimatePresence>
                   {showSizeGuide && (
                     <motion.div
@@ -274,6 +328,46 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </motion.div>
             )}
 
+            {/* Color Selector */}
+            {colors.length > 1 && (
+              <motion.div
+                className="mb-6 w-full"
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+              >
+                <div className="font-sans text-[11px] text-[var(--faded)] tracking-[0.2em] uppercase mb-3">
+                  COLOR {selectedColor && `— ${selectedColor}`}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {colors.map((color) => {
+                    const colorVariants = variants.filter((v: any) =>
+                      v.selectedOptions?.find((o: any) => o.name === 'Color')?.value === color
+                    );
+                    const colorAvailable = colorVariants.some((v: any) => v.availableForSale);
+                    return (
+                      <button
+                        key={color}
+                        onClick={() => { setSelectedColor(color); setSelectedSize(null); }}
+                        title={color}
+                        disabled={!colorAvailable}
+                        className={`relative w-8 h-8 rounded-full border-2 transition-all duration-200 ${
+                          selectedColor === color
+                            ? 'border-[var(--bone)] scale-110'
+                            : 'border-[var(--whisper)]/30 hover:border-[var(--whisper)]/80'
+                        } ${!colorAvailable ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
+                        style={{ backgroundColor: colorToCSS(color) }}
+                      >
+                        {!colorAvailable && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-full h-[1px] bg-[var(--faded)] rotate-45" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
             {/* Size Selector */}
             {sizes.length > 0 && (
               <motion.div
@@ -284,19 +378,30 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                   SELECT SIZE {selectedSize && `— ${selectedSize}`}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {sizes.map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 font-sans text-[12px] tracking-[0.15em] uppercase border transition-all duration-200 ${
-                        selectedSize === size
-                          ? 'bg-[var(--bone)] text-[var(--void)] border-[var(--bone)]'
-                          : 'bg-transparent text-[var(--bone)] border-[var(--whisper)]/40 hover:border-[var(--bone)]'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
+                  {sizes.map((size) => {
+                    const sizeVariant = variants.find((v: any) => {
+                      const c = v.selectedOptions?.find((o: any) => o.name === 'Color')?.value;
+                      const s = v.selectedOptions?.find((o: any) => o.name === 'Size')?.value;
+                      return s === size && (!selectedColor || c === selectedColor);
+                    });
+                    const sizeAvailable = sizeVariant?.availableForSale ?? true;
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => sizeAvailable && setSelectedSize(size)}
+                        disabled={!sizeAvailable}
+                        className={`relative px-4 py-2 font-sans text-[12px] tracking-[0.15em] uppercase border transition-all duration-200 ${
+                          selectedSize === size
+                            ? 'bg-[var(--bone)] text-[var(--void)] border-[var(--bone)]'
+                            : !sizeAvailable
+                            ? 'border-[var(--whisper)]/20 text-[var(--faded)]/40 cursor-not-allowed line-through'
+                            : 'bg-transparent text-[var(--bone)] border-[var(--whisper)]/40 hover:border-[var(--bone)]'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
                 </div>
               </motion.div>
             )}
@@ -305,25 +410,34 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               className="flex items-center gap-8 w-full border-t border-[var(--whisper)] pt-8"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
-              <div className="font-sans text-[26px] text-[var(--bone)] tracking-[0.1em]">{productPrice}</div>
+              <div className="flex flex-col gap-1">
+                <div className="font-sans text-[26px] text-[var(--bone)] tracking-[0.1em]">{productPrice}</div>
+                {/* Stock status text */}
+                {isSoldOut && (
+                  <div className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase">Out of stock</div>
+                )}
+                {isLowStock && !isSoldOut && (
+                  <div className="font-sans text-[10px] tracking-[0.2em] text-[var(--blood)] uppercase">Low stock — order soon</div>
+                )}
+              </div>
               <button
                 onClick={() => {
-                  if (selectedVariant) {
-                    addToCart({ ...product, shopifyVariantId: selectedVariant.id });
-                  } else {
-                    addToCart(product);
+                  if (!needsSelection && !isSoldOut) {
+                    addToCart({ ...product, shopifyVariantId: selectedVariant?.id });
+                    onClose();
+                    setIsCheckoutOpen(true);
                   }
-                  onClose();
-                  setIsCheckoutOpen(true);
                 }}
+                disabled={needsSelection || isSoldOut}
                 className={`flex-1 font-sans text-[14px] font-bold tracking-[0.3em] py-4 uppercase transition-colors duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] ${
-                  sizes.length > 0 && !selectedSize
+                  isSoldOut
+                    ? 'bg-[var(--whisper)]/10 text-[var(--faded)]/50 cursor-not-allowed'
+                    : needsSelection
                     ? 'bg-[var(--whisper)]/20 text-[var(--faded)] cursor-not-allowed'
                     : 'bg-[var(--bone)] text-[var(--void)] hover:bg-[var(--gold)]'
                 }`}
-                disabled={sizes.length > 0 && !selectedSize}
               >
-                {sizes.length > 0 && !selectedSize ? 'SELECT A SIZE' : 'ACQUIRE'}
+                {isSoldOut ? 'SOLD OUT' : needsSelection ? `SELECT ${!selectedColor && colors.length > 1 ? 'A COLOR' : 'A SIZE'}` : 'ACQUIRE'}
               </button>
             </motion.div>
 
