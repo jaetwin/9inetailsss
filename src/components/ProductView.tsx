@@ -97,8 +97,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 <img
                   src={imageUrl}
                   alt={imageAlt}
-                  className="absolute inset-0 w-full h-full object-contain mix-blend-multiply"
-                  style={{ backgroundColor: 'transparent' }}
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               ) : (
                 <>
@@ -129,7 +128,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                     <img
                       src={img.url}
                       alt={img.altText}
-                      className="w-full h-full object-contain mix-blend-multiply"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 ))}
