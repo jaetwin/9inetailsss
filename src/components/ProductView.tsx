@@ -124,11 +124,18 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
             >
               {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={imageAlt}
-                  className="absolute inset-0 w-full h-full object-contain"
-                />
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={imageUrl}
+                    src={imageUrl}
+                    alt={imageAlt}
+                    className="absolute inset-0 w-full h-full object-contain"
+                    initial={{ opacity: 0, scale: 1.03 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  />
+                </AnimatePresence>
               ) : (
                 <>
                   <div className="absolute inset-0 bg-gradient-to-tr from-[var(--void)] to-[var(--ash)] opacity-30" />
