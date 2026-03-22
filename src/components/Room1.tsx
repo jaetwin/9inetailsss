@@ -159,7 +159,7 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
         {/* Enter Button */}
         {active || progress < 100 ? (
           <div className="font-sans text-[13px] tracking-[0.4em] text-[var(--faded)] px-12 py-5 uppercase animate-pulse">
-            FORMING COVENANT... {Math.round(progress)}%
+            LOADING... {Math.round(progress)}%
           </div>
         ) : (
           <motion.button
