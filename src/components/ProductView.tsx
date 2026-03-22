@@ -133,7 +133,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[10005] flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto pointer-events-auto"
+        className="fixed inset-0 z-[10005] flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto pointer-events-auto bg-[var(--void)]"
         initial={{ opacity: 0, filter: 'blur(20px)' }}
         animate={{ opacity: 1, filter: 'blur(0px)' }}
         exit={{ opacity: 0, filter: 'blur(20px)' }}
