@@ -33,6 +33,7 @@ function shopifyToDisplayProduct(p: ShopifyProduct, idx: number) {
     rot: ROTS[idx % ROTS.length],
     shopifyVariantId: variant?.id,
     shopifyHandle: p.handle,
+    description: p.description ?? null,
     // Pass single image for card display
     image: p.images.edges[0]?.node.url ?? null,
     // Pass full images array for gallery in ProductView
