@@ -33,7 +33,6 @@ export default function App() {
   const [showRoom2, setShowRoom2] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   
-  // 1. Audio and Mute State — reads saved preference from localStorage on load
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('muted') === 'true';
   });
@@ -46,7 +45,6 @@ export default function App() {
     window.scrollTo(0, 0);
   }, []);
 
-  // 2. Toggle Function — saves preference to localStorage
   const toggleMute = () => {
     const nextMuteState = !isMuted;
     setIsMuted(nextMuteState);
@@ -66,9 +64,12 @@ export default function App() {
 
   return (
     <CartProvider>
-      <div className="relative w-[100vw] h-[100vh] bg-[var(--void)] overflow-hidden cursor-none">
+      {/* overflow becomes auto on mobile when product view is open so it can scroll */}
+      <div
+        className="relative w-[100vw] h-[100vh] bg-[var(--void)] cursor-none"
+        style={{ overflow: selectedProduct ? 'auto' : 'hidden' }}
+      >
         
-        {/* Global Audio Tag */}
         <audio ref={audioRef} src="/song.mp3" loop />
 
         <Cursor />
@@ -90,8 +91,8 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          {/* Persistent Mute Button - Bottom Left */}
-          {showRoom2 && (
+          {/* Hide mute button when product view is open so it doesn't bleed through */}
+          {showRoom2 && !selectedProduct && (
             <div className="fixed bottom-8 left-8 z-[9999] pointer-events-auto">
               <button 
                 onClick={toggleMute} 
@@ -102,7 +103,7 @@ export default function App() {
             </div>
           )}
 
-         <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-none">
+          <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-none">
             <ErrorBoundary fallback={<div className="p-8 text-[var(--blood)]">Failed to load 3D application.</div>}>
               <Canvas camera={{ position: [0, 0, 14], fov: 45 }} shadows>
                 <ambientLight intensity={0.10} color="#ffffff" />
