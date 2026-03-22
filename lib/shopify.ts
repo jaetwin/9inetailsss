@@ -23,7 +23,7 @@ export const GET_ALL_PRODUCTS = `
           images(first: 5) {
             edges { node { url altText } }
           }
-          variants(first: 10) {
+          variants(first: 20) {
             edges {
               node {
                 id
