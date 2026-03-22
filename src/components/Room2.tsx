@@ -55,11 +55,13 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    fetchProducts(6).then(shopifyProducts => {
-      if (shopifyProducts.length > 0) {
-        setProducts(shopifyProducts.map(shopifyToDisplayProduct));
-      }
-    });
+    
+   fetchProducts(6).then(shopifyProducts => {
+  console.log('VARIANTS:', JSON.stringify(shopifyProducts[0]?.variants?.edges?.map(e => e.node.title)));
+  if (shopifyProducts.length > 0) {
+    setProducts(shopifyProducts.map(shopifyToDisplayProduct));
+  }
+});
   }, []);
 
   if (!isVisible) return null;
