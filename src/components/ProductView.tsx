@@ -19,6 +19,14 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
     };
   }, []);
 
+  // product.image is set by Room2's shopifyToDisplayProduct mapper
+  const imageUrl = product.image ?? product.images?.edges?.[0]?.node?.url;
+  console.log('PRODUCT DATA:', product);
+console.log('IMAGE URL:', imageUrl);
+  const imageAlt = product.name || product.title || 'Product image';
+  const productName = product.name || product.title;
+  const productPrice = product.price;
+
   return (
     <AnimatePresence>
       <motion.div 
@@ -55,18 +63,22 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
         <div className="relative z-10 w-full max-w-[1200px] flex flex-col md:flex-row gap-12 items-center h-full py-20">
           
-          {/* Left Side: Empty space or aesthetic graphic since no image */}
+          {/* Left Side: Product Image */}
           <div className="w-full md:w-1/2 h-[50vh] md:h-full flex items-center justify-center relative">
-             <motion.div 
+             <motion.div
                className="w-[80%] aspect-[3/4] glass-panel clip-diagonal border border-[var(--whisper)] flex items-center justify-center relative overflow-hidden group"
                initial={{ opacity: 0, scale: 0.9, rotate: -2 }}
                animate={{ opacity: 1, scale: 1, rotate: product.rot || 0 }}
                transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
              >
-               <div className="absolute inset-0 bg-gradient-to-tr from-[var(--void)] to-[var(--ash)] opacity-30" />
-               <div className="font-sans text-[12px] tracking-[0.3em] text-[var(--faded)] -rotate-90 uppercase">
-                 AESTHETIC DECAY
-               </div>
+               {imageUrl ? (
+                 <img src={imageUrl} alt={imageAlt} className="absolute inset-0 w-full h-full object-cover opacity-90" />
+               ) : (
+                 <>
+                   <div className="absolute inset-0 bg-gradient-to-tr from-[var(--void)] to-[var(--ash)] opacity-30" />
+                   <div className="font-sans text-[12px] tracking-[0.3em] text-[var(--faded)] -rotate-90 uppercase">AESTHETIC DECAY</div>
+                 </>
+               )}
              </motion.div>
           </div>
 
@@ -83,7 +95,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               className="font-bebas text-[clamp(50px,6vw,100px)] text-[var(--bone)] leading-[0.85] tracking-[0.02em] uppercase mb-8"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             >
-              {product.name}
+              {productName}
             </motion.h2>
 
             <motion.div 
@@ -100,7 +112,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               className="flex items-center gap-8 w-full border-t border-[var(--whisper)] pt-8"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
-              <div className="font-sans text-[26px] text-[var(--bone)] tracking-[0.1em]">{product.price}</div>
+              <div className="font-sans text-[26px] text-[var(--bone)] tracking-[0.1em]">{productPrice}</div>
               <button 
                 onClick={() => {
                   addToCart(product);
