@@ -1,6 +1,12 @@
 import React from 'react';
 
+// Detect touch/mobile device — grain animation is expensive on mobile
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
 export default function Grain() {
+  // Skip rendering entirely on mobile — saves constant CPU/GPU usage
+  if (isMobile) return null;
+
   return (
     <div 
       className="fixed inset-0 z-[9999] opacity-[0.06] mix-blend-overlay pointer-events-none animate-noise"
