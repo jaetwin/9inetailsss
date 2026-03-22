@@ -1,14 +1,61 @@
-import { createStorefrontApiClient } from '@shopify/storefront-api-client';
+const domain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
+const token = import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN;
 
-export const shopifyClient = createStorefrontApiClient({
-  storeDomain: import.meta.env.VITE_SHOPIFY_STORE_DOMAIN ?? '',
-  apiVersion: '2024-10',
-  publicAccessToken: import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN ?? '',
-});
+export const isShopifyConfigured = Boolean(domain && token);
 
-// ─── Queries ───────────────────────────────────────────────────────────────
+const endpoint = `https://${domain}/api/2024-10/graphql.json`;
 
-export const GET_ALL_PRODUCTS = `
+async function shopifyFetch(query: string, variables = {}) {
+  if (!isShopifyConfigured) return null;
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': token,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const data = await res.json();
+
+  if (data.errors) {
+    console.error('Shopify error:', data.errors);
+    throw new Error('Shopify API error');
+  }
+
+  return data.data;
+}
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ShopifyProduct {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  priceRange: {
+    minVariantPrice: { amount: string; currencyCode: string };
+  };
+  images: {
+    edges: { node: { url: string; altText: string | null } }[];
+  };
+  variants: {
+    edges: {
+      node: {
+        id: string;
+        title: string;
+        availableForSale: boolean;
+        price: { amount: string; currencyCode: string };
+        selectedOptions: { name: string; value: string }[];
+      };
+    }[];
+  };
+}
+
+// ─── Queries ────────────────────────────────────────────────────────────────
+
+const GET_ALL_PRODUCTS = `
   query GetAllProducts($first: Int!) {
     products(first: $first) {
       edges {
@@ -40,102 +87,45 @@ export const GET_ALL_PRODUCTS = `
   }
 `;
 
-export const GET_PRODUCT_BY_HANDLE = `
-  query GetProduct($handle: String!) {
-    productByHandle(handle: $handle) {
-      id
-      title
-      handle
-      description
-      images(first: 10) {
-        edges { node { url altText } }
-      }
-      variants(first: 20) {
-        edges {
-          node {
-            id
-            title
-            availableForSale
-            price { amount currencyCode }
-            selectedOptions { name value }
-          }
-        }
-      }
-    }
-  }
-`;
-
-// ─── Cart Mutations ─────────────────────────────────────────────────────────
-
-const CART_FIELDS = `
-  id
-  checkoutUrl
-  lines(first: 30) {
-    edges {
-      node {
-        id
-        quantity
-        merchandise {
-          ... on ProductVariant {
-            id
-            title
-            price { amount currencyCode }
-            product {
-              title
-              images(first: 1) { edges { node { url altText } } }
-            }
-          }
-        }
-      }
-    }
-  }
-  cost {
-    totalAmount { amount currencyCode }
-    subtotalAmount { amount currencyCode }
-  }
-`;
-
-export const CART_CREATE = `
+const CART_CREATE = `
   mutation CartCreate($input: CartInput!) {
     cartCreate(input: $input) {
-      cart { ${CART_FIELDS} }
+      cart {
+        id
+        checkoutUrl
+      }
       userErrors { field message }
     }
   }
 `;
 
-export const CART_LINES_ADD = `
-  mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-    cartLinesAdd(cartId: $cartId, lines: $lines) {
-      cart { ${CART_FIELDS} }
-      userErrors { field message }
-    }
+// ─── Exports ────────────────────────────────────────────────────────────────
+
+export async function fetchProducts(count = 6): Promise<ShopifyProduct[]> {
+  try {
+    const data = await shopifyFetch(GET_ALL_PRODUCTS, { first: count });
+    if (!data) return [];
+    return data.products.edges.map((e: { node: ShopifyProduct }) => e.node);
+  } catch {
+    return [];
   }
-`;
+}
 
-export const CART_LINES_REMOVE = `
-  mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
-    cartLinesRemove(cartId: $cartId, lineIds: $lineIds) {
-      cart { ${CART_FIELDS} }
-      userErrors { field message }
+export async function createShopifyCheckout(
+  lines: { variantId: string; quantity: number }[],
+): Promise<string | null> {
+  try {
+    const data = await shopifyFetch(CART_CREATE, {
+      input: { lines: lines.map(l => ({ merchandiseId: l.variantId, quantity: l.quantity })) },
+    });
+    if (!data) return null;
+    const { cart, userErrors } = data.cartCreate;
+    if (userErrors?.length) {
+      console.error('Shopify cart errors:', userErrors);
+      return null;
     }
+    return cart?.checkoutUrl ?? null;
+  } catch {
+    return null;
   }
-`;
-
-export const CART_LINES_UPDATE = `
-  mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
-    cartLinesUpdate(cartId: $cartId, lines: $lines) {
-      cart { ${CART_FIELDS} }
-      userErrors { field message }
-    }
-  }
-`;
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-export function formatPrice(amount: string, currencyCode: string) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currencyCode,
-  }).format(Number(amount));
 }
