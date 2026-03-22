@@ -36,6 +36,19 @@
   --font-brutal:   'Cinzel', 'Bebas Neue', Impact, sans-serif;
   --font-mono:     'IBM Plex Mono', monospace;
   --font-gothic:   'UnifrakturMaguntia', serif;
+
+  /* Spacing scale */
+  --space-xs:    0.5rem;
+  --space-sm:    1rem;
+  --space-md:    2rem;
+  --space-lg:    4rem;
+  --space-xl:    8rem;
+  --space-2xl:   14rem;
+
+  /* Motion */
+  --ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-expo:    cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-cathedral:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .font-gothic {
@@ -57,32 +70,21 @@
 
 .animate-noise {
   animation: noise 8s steps(10) infinite;
-  /* Make element slightly larger than viewport so translate doesn't reveal edges */
   width: 120vw;
   height: 120vh;
   left: -10vw;
   top: -10vh;
 }
 
-:root {
-  /* Spacing scale */
-  --space-xs:    0.5rem;
-  --space-sm:    1rem;
-  --space-md:    2rem;
-  --space-lg:    4rem;
-  --space-xl:    8rem;
-  --space-2xl:   14rem;
-
-  /* Motion */
-  --ease-out-expo:   cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-expo:    cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-cathedral:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
+/* ─── Cursor: only hide on non-touch devices ─────────────────────────────── */
+@media (pointer: fine) {
+  * { cursor: none !important; }
 }
 
-@media (pointer: fine) {
-  * {
-    cursor: none;
-  }
+@media (pointer: coarse) {
+  * { cursor: auto !important; }
+  /* Re-enable pointer cursor on interactive elements on touch */
+  button, a, [role="button"], [onClick] { cursor: pointer !important; }
 }
 
 body {
@@ -92,6 +94,16 @@ body {
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  /* Prevent rubber-band scroll on iOS */
+  overscroll-behavior: none;
+  /* Improve touch scrolling */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text size adjustment on mobile */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 ::selection {
@@ -104,7 +116,7 @@ body {
   outline-offset: 3px;
 }
 
-/* Scrollbar hiding for cleaner look */
+/* Scrollbar hiding */
 ::-webkit-scrollbar {
   width: 0px;
   background: transparent;
@@ -232,4 +244,32 @@ body {
   top: 50%;
   left: 0;
   transform: translateY(-50%);
+}
+
+/* ─── Mobile overrides ───────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Reduce motion for performance on mobile */
+  .animate-noise {
+    display: none;
+  }
+
+  /* Make modals/overlays scrollable on mobile */
+  .mobile-scroll {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent horizontal overflow */
+  .html-scroll-container {
+    overflow-x: hidden;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
