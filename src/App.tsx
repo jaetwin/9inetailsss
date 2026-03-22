@@ -29,6 +29,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() { if (this.state.hasError) { return this.props.fallback; } return this.props.children; }
 }
 
+// Detect mobile once at module level
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
 export default function App() {
   const [showRoom2, setShowRoom2] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
@@ -64,7 +67,6 @@ export default function App() {
 
   return (
     <CartProvider>
-      {/* overflow becomes auto on mobile when product view is open so it can scroll */}
       <div
         className="relative w-[100vw] h-[100vh] bg-[var(--void)] cursor-none"
         style={{ overflow: selectedProduct ? 'auto' : 'hidden' }}
@@ -91,7 +93,6 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          {/* Hide mute button when product view is open so it doesn't bleed through */}
           {showRoom2 && !selectedProduct && (
             <div className="fixed bottom-8 left-8 z-[9999] pointer-events-auto">
               <button 
@@ -105,9 +106,25 @@ export default function App() {
 
           <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-none">
             <ErrorBoundary fallback={<div className="p-8 text-[var(--blood)]">Failed to load 3D application.</div>}>
-              <Canvas camera={{ position: [0, 0, 14], fov: 45 }} shadows>
+              <Canvas
+                camera={{ position: [0, 0, 14], fov: 45 }}
+                // Disable shadows on mobile — major performance win
+                shadows={!isMobile}
+                // Lower pixel ratio on mobile so GPU renders fewer pixels
+                gl={{
+                  antialias: !isMobile,
+                  powerPreference: isMobile ? 'low-power' : 'high-performance',
+                }}
+                dpr={isMobile ? [1, 1.5] : [1, 2]}
+              >
                 <ambientLight intensity={0.10} color="#ffffff" />
-                <ScrollControls pages={8.5} damping={0.15} distance={1.2} enabled={showRoom2}>
+                <ScrollControls
+                  pages={8.5}
+                  // Snappier damping on mobile
+                  damping={isMobile ? 0.3 : 0.15}
+                  distance={1.2}
+                  enabled={showRoom2}
+                >
                   <Scene3D />
                   <Scroll html style={{ width: '100vw' }}>
                     <div className="flex flex-col w-full html-scroll-container">
