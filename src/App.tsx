@@ -102,7 +102,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-auto">
+         <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-none">
             <ErrorBoundary fallback={<div className="p-8 text-[var(--blood)]">Failed to load 3D application.</div>}>
               <Canvas camera={{ position: [0, 0, 14], fov: 45 }} shadows>
                 <ambientLight intensity={0.10} color="#ffffff" />
