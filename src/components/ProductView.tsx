@@ -7,21 +7,62 @@ interface ProductViewProps {
   onClose: () => void;
 }
 
+// ─── Size Guide Parser ───────────────────────────────────────────────────────
+// Detects "Size guide LENGTH (cm) WIDTH (cm) S 69.9 45.7 ..." pattern
+// and returns { mainText, sizeRows } where sizeRows is a parsed table
+function parseDescription(description: string) {
+  if (!description) return { mainText: '', sizeRows: null };
+
+  const guideIndex = description.indexOf('Size guide');
+  if (guideIndex === -1) return { mainText: description, sizeRows: null };
+
+  const mainText = description.slice(0, guideIndex).trim();
+  const guideText = description.slice(guideIndex);
+
+  // Extract header columns e.g. LENGTH (cm) WIDTH (cm)
+  const headerMatch = guideText.match(/Size guide\s+((?:[A-Z]+\s*(?:\([^)]*\))?\s*)+)/);
+  if (!headerMatch) return { mainText, sizeRows: null };
+
+  const headerStr = headerMatch[1].trim();
+  // Split header into columns: ["LENGTH (cm)", "WIDTH (cm)"]
+  const headers = headerStr.match(/[A-Z]+(?:\s*\([^)]*\))?/g) ?? [];
+
+  // After the header, parse rows like "S 69.9 45.7"
+  const afterHeader = guideText.slice(guideText.indexOf(headerStr) + headerStr.length);
+  const SIZES = ['3XL', '2XL', 'XL', 'L', 'M', 'S', 'XS', 'XXL', 'XXXL'];
+  const rowRegex = new RegExp(`(${SIZES.join('|')})\\s+([\\d.]+(?:\\s+[\\d.]+)*)`, 'g');
+
+  const sizeRows: { size: string; values: string[] }[] = [];
+  let match;
+  while ((match = rowRegex.exec(afterHeader)) !== null) {
+    const size = match[1];
+    const values = match[2].trim().split(/\s+/);
+    sizeRows.push({ size, values });
+  }
+
+  // Sort by size order
+  const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL'];
+  sizeRows.sort((a, b) => sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size));
+
+  return { mainText, sizeRows: sizeRows.length > 0 ? { headers, rows: sizeRows } : null };
+}
+
 export default function ProductView({ product, onClose }: ProductViewProps) {
   const { addToCart, setIsCheckoutOpen } = useCart();
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     setSelectedImageIdx(0);
     setSelectedSize(null);
+    setShowSizeGuide(false);
     return () => {
       document.body.style.overflow = 'auto';
     };
   }, [product]);
 
-  // Extract all images
   const images: { url: string; altText: string }[] =
     product.images?.edges?.map((e: any) => e.node) ??
     (product.image ? [{ url: product.image, altText: product.name }] : []);
@@ -31,7 +72,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const productName = product.name || product.title;
   const productPrice = product.price;
 
-  // Extract sizes from variants
   const variants = product.variants?.edges?.map((e: any) => e.node) ?? [];
   const sizes: string[] = [];
   variants.forEach((v: any) => {
@@ -41,12 +81,13 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
     }
   });
 
-  // Find variant matching selected size
   const selectedVariant = selectedSize
     ? variants.find((v: any) =>
         v.selectedOptions?.some((o: any) => o.name === 'Size' && o.value === selectedSize)
       )
     : variants[0];
+
+  const { mainText, sizeRows } = parseDescription(product.description ?? '');
 
   return (
     <AnimatePresence>
@@ -86,7 +127,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
           {/* Left Side: Thumbnails + Main Image */}
           <div className="w-full md:w-1/2 h-[50vh] md:h-full flex flex-row items-center justify-center gap-3">
 
-            {/* Thumbnail Strip — vertical on the left */}
             {images.length > 1 && (
               <motion.div
                 className="flex flex-col gap-2 flex-shrink-0"
@@ -115,7 +155,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </motion.div>
             )}
 
-            {/* Main Image Frame */}
             <div
               className="flex-1 aspect-[3/4] glass-panel clip-diagonal border border-[var(--whisper)] flex items-center justify-center relative overflow-hidden"
               style={{ background: '#111111', transform: `rotate(${product.rot || 0}deg)` }}
@@ -165,16 +204,75 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               initial={{ width: 0 }} animate={{ width: 48 }} transition={{ delay: 0.4 }}
             />
 
-            <div className="font-serif italic font-light text-[15px] text-[var(--parchment)] leading-[1.8] max-w-[450px] mb-8 overflow-y-auto max-h-[130px] pr-2">
-              <motion.span
-                initial={{ y: "100%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="inline-block"
+            {/* Description */}
+            {mainText && (
+              <div className="font-serif italic font-light text-[14px] text-[var(--parchment)] leading-[1.8] max-w-[450px] mb-6 overflow-y-auto max-h-[100px] pr-2">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, delay: 0.6 }}
+                  className="inline-block"
+                >
+                  {mainText}
+                </motion.span>
+              </div>
+            )}
+
+            {/* Size Guide Toggle + Table */}
+            {sizeRows && (
+              <motion.div
+                className="w-full mb-6"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
               >
-                {product.description || 'Designed to honor the LORD in everything.'}
-              </motion.span>
-            </div>
+                <button
+                  onClick={() => setShowSizeGuide(v => !v)}
+                  className="font-sans text-[11px] text-[var(--faded)] tracking-[0.2em] uppercase mb-3 hover:text-[var(--bone)] transition-colors duration-200 flex items-center gap-2"
+                >
+                  SIZE GUIDE
+                  <span className="text-[10px]">{showSizeGuide ? '▲' : '▼'}</span>
+                </button>
+
+                <AnimatePresence>
+                  {showSizeGuide && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <table className="w-full text-left border-collapse mb-4">
+                        <thead>
+                          <tr className="border-b border-[var(--whisper)]/30">
+                            <th className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase py-2 pr-4">SIZE</th>
+                            {sizeRows.headers.map((h, i) => (
+                              <th key={i} className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase py-2 pr-4">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sizeRows.rows.map((row, i) => (
+                            <tr
+                              key={i}
+                              className={`border-b border-[var(--whisper)]/10 transition-colors duration-150 ${
+                                selectedSize === row.size ? 'bg-[var(--bone)]/5' : 'hover:bg-[var(--whisper)]/5'
+                              }`}
+                            >
+                              <td className={`font-sans text-[12px] tracking-[0.15em] py-2 pr-4 ${selectedSize === row.size ? 'text-[var(--bone)]' : 'text-[var(--faded)]'}`}>
+                                {row.size}
+                              </td>
+                              {row.values.map((val, j) => (
+                                <td key={j} className="font-sans text-[12px] text-[var(--parchment)] py-2 pr-4">{val}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
 
             {/* Size Selector */}
             {sizes.length > 0 && (
