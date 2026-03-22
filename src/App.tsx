@@ -33,8 +33,10 @@ export default function App() {
   const [showRoom2, setShowRoom2] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   
-  // 1. Audio and Mute State
-  const [isMuted, setIsMuted] = useState(false); 
+  // 1. Audio and Mute State — reads saved preference from localStorage on load
+  const [isMuted, setIsMuted] = useState(() => {
+    return localStorage.getItem('muted') === 'true';
+  });
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -44,10 +46,11 @@ export default function App() {
     window.scrollTo(0, 0);
   }, []);
 
-  // 2. Toggle Function logic
+  // 2. Toggle Function — saves preference to localStorage
   const toggleMute = () => {
     const nextMuteState = !isMuted;
     setIsMuted(nextMuteState);
+    localStorage.setItem('muted', String(nextMuteState));
     if (audioRef.current) {
       audioRef.current.muted = nextMuteState;
     }
@@ -87,19 +90,17 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          {/* 4. Persistent Mute Button (Visible after entering Sanctuary) */}
- {/* Persistent Mute Button - Bottom Left */}
-{showRoom2 && (
-  <div className="fixed bottom-8 left-8 z-[9999] pointer-events-auto">
-    <button 
-      onClick={toggleMute} 
-      className="text-[var(--faded)] hover:text-[var(--bone)] text-[11px] tracking-[0.2em] uppercase cursor-pointer transition-colors duration-300"
-    >
-      {isMuted ? "[ Unmute ]" : "[ Mute ]"}
-    </button>
-  </div>
-)}
-
+          {/* Persistent Mute Button - Bottom Left */}
+          {showRoom2 && (
+            <div className="fixed bottom-8 left-8 z-[9999] pointer-events-auto">
+              <button 
+                onClick={toggleMute} 
+                className="text-[var(--faded)] hover:text-[var(--bone)] text-[11px] tracking-[0.2em] uppercase cursor-pointer transition-colors duration-300"
+              >
+                {isMuted ? "[ Unmute ]" : "[ Mute ]"}
+              </button>
+            </div>
+          )}
 
           <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-auto">
             <ErrorBoundary fallback={<div className="p-8 text-[var(--blood)]">Failed to load 3D application.</div>}>
