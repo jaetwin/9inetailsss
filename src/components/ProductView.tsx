@@ -86,7 +86,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
   const variants = product.variants?.edges?.map((e: any) => e.node) ?? [];
 
-  // Extract unique colors
   const colors: string[] = [];
   variants.forEach((v: any) => {
     const colorOption = v.selectedOptions?.find((o: any) => o.name === 'Color');
@@ -95,7 +94,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
     }
   });
 
-  // Extract sizes filtered by selected color
   const sizes: string[] = [];
   variants.forEach((v: any) => {
     const colorOption = v.selectedOptions?.find((o: any) => o.name === 'Color');
@@ -108,7 +106,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
     }
   });
 
-  // Find the exact matching variant
   const selectedVariant = variants.find((v: any) => {
     const colorOption = v.selectedOptions?.find((o: any) => o.name === 'Color');
     const sizeOption = v.selectedOptions?.find((o: any) => o.name === 'Size');
@@ -117,8 +114,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
     return colorMatch && sizeMatch;
   }) ?? variants[0];
 
-  // Stock status for the selected variant
-  const isAvailable = selectedVariant?.availableForSale ?? true;
   const allVariantsForColor = selectedColor
     ? variants.filter((v: any) =>
         v.selectedOptions?.find((o: any) => o.name === 'Color')?.value === selectedColor
@@ -141,25 +136,25 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
         exit={{ opacity: 0, filter: 'blur(20px)' }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
       >
-        {/* Background */}
+        {/* Background — fixed so it covers full screen even when scrolling on mobile */}
         <div
-          className="absolute inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
+          className="fixed inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
           style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
         />
-        <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/90 to-[var(--void)]/80 backdrop-blur-xl" />
+        <div className="fixed inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/90 to-[var(--void)]/80 backdrop-blur-xl" />
 
         {/* Close Button */}
         <div
-          className="absolute top-4 left-4 md:top-10 md:left-10 z-[10010] cursor-pointer group p-3 md:p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] transition-colors duration-300"
+          className="fixed top-4 left-4 md:top-10 md:left-10 z-[10010] cursor-pointer group p-3 md:p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] active:bg-[var(--bone)] transition-colors duration-300"
           onClick={onClose}
         >
-          <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] transition-colors uppercase">
+          <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] active:text-[var(--void)] transition-colors uppercase">
             RETURN TO SCENE
           </div>
         </div>
 
         {/* Ambient background text */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none overflow-hidden">
+        <div className="fixed inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none overflow-hidden">
           <motion.h1 className="font-bebas text-[clamp(150px,40vw,600px)] text-stroke whitespace-nowrap -rotate-12">
             {String(product.id).padStart(3, '0')}
           </motion.h1>
@@ -222,7 +217,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 </>
               )}
 
-              {/* Stock badge on image */}
               {isSoldOut && (
                 <div className="absolute top-3 right-3 bg-[var(--void)]/80 border border-[var(--whisper)]/30 px-2 py-1">
                   <span className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase">Sold Out</span>
@@ -259,7 +253,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               initial={{ width: 0 }} animate={{ width: 48 }} transition={{ delay: 0.4 }}
             />
 
-            {/* Description */}
             {mainText && (
               <div className="font-serif italic font-light text-[14px] text-[var(--parchment)] leading-[1.8] max-w-[450px] mb-6 overflow-y-auto max-h-[100px] pr-2">
                 <motion.span
@@ -273,7 +266,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </div>
             )}
 
-            {/* Size Guide */}
             {sizeRows && (
               <motion.div
                 className="w-full mb-6"
@@ -328,7 +320,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </motion.div>
             )}
 
-            {/* Color Selector */}
             {colors.length > 1 && (
               <motion.div
                 className="mb-6 w-full"
@@ -368,7 +359,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </motion.div>
             )}
 
-            {/* Size Selector */}
             {sizes.length > 0 && (
               <motion.div
                 className="mb-8 w-full"
@@ -407,12 +397,11 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
             )}
 
             <motion.div
-              className="flex items-center gap-8 w-full border-t border-[var(--whisper)] pt-8"
+              className="flex items-center gap-8 w-full border-t border-[var(--whisper)] pt-8 mb-8"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
             >
               <div className="flex flex-col gap-1">
                 <div className="font-sans text-[26px] text-[var(--bone)] tracking-[0.1em]">{productPrice}</div>
-                {/* Stock status text */}
                 {isSoldOut && (
                   <div className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase">Out of stock</div>
                 )}
