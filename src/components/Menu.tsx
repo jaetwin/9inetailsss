@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
+import PrayerRequest from './PrayerRequest';
 
 export default function Menu() {
   const [isOpen, setIsOpen] = useState(false);
   const [overlayMessage, setOverlayMessage] = useState<string | null>(null);
+  const [prayerRequestOpen, setPrayerRequestOpen] = useState(false);
   const { cartItems, setIsCheckoutOpen } = useCart();
 
   const toggleMenu = () => {
@@ -17,6 +19,7 @@ export default function Menu() {
     'LOOKBOOK',
     'SCRIPTURE',
     'PRAY WITH ME',
+    'PRAYER REQUEST',
     'MISSION',
     'ARCHIVE',
   ];
@@ -41,10 +44,20 @@ export default function Menu() {
     if (overlayMessage === 'PRAY WITH ME') {
       interval = setInterval(() => {
         setActivePrayerIndex((prev) => (prev + 1) % prayers.length);
-      }, 5000); // 7 seconds per prayer
+      }, 5000);
     }
     return () => clearInterval(interval);
   }, [overlayMessage, prayers.length]);
+
+  const handleMenuItemClick = (item: string) => {
+    if (item === 'PRAYER REQUEST') {
+      setIsOpen(false);
+      setTimeout(() => setPrayerRequestOpen(true), 400);
+    } else {
+      setOverlayMessage(item);
+      setTimeout(() => setIsOpen(false), 400);
+    }
+  };
 
   const renderMenuContent = () => {
     if (!overlayMessage) return null;
@@ -99,50 +112,40 @@ export default function Menu() {
           <div className="max-w-4xl mx-auto text-center pb-20 mt-12">
              <h2 className="font-gothic text-[clamp(50px,7vw,90px)] text-[var(--bone)] mb-20 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Word Of The LORD</h2>
              <div className="font-serif text-[clamp(24px,3vw,32px)] tracking-wide text-[var(--bone)] leading-relaxed space-y-16">
-                
                 <div className="flex flex-col items-center">
                   <div className="overflow-hidden">
                     <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"And let us not grow weary of doing good, for in due season we will reap, if we do not give up."</motion.p>
                   </div>
                   <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– Galatians 6:9</motion.p>
                 </div>
-                
                 <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                
                 <div className="flex flex-col items-center">
                   <div className="overflow-hidden">
                     <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"For God gave us a spirit not of fear but of power and love and self-control."</motion.p>
                   </div>
                   <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– 2 Timothy 1:7</motion.p>
                 </div>
-                
                 <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                
                 <div className="flex flex-col items-center">
                   <div className="overflow-hidden">
                     <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world."</motion.p>
                   </div>
                   <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– John 16:33</motion.p>
                 </div>
-                
                 <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                
                 <div className="flex flex-col items-center">
                   <div className="overflow-hidden">
                     <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me."</motion.p>
                   </div>
                   <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– Psalm 23:4</motion.p>
                 </div>
-                
                 <div className="w-[1px] h-[60px] bg-[var(--whisper)]/40 mx-auto" />
-                
                 <div className="flex flex-col items-center">
                   <div className="overflow-hidden">
                     <motion.p initial={{ y: "100%" }} whileInView={{ y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand."</motion.p>
                   </div>
                   <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 1, delay: 0.4 }} className="text-[14px] text-[var(--faded)] tracking-[0.3em] uppercase mt-6 font-sans not-italic drop-shadow-none">– Isaiah 41:10</motion.p>
                 </div>
-                
              </div>
           </div>
         );
@@ -150,7 +153,6 @@ export default function Menu() {
         return (
           <div className="max-w-4xl mx-auto text-center flex flex-col items-center justify-center min-h-[50vh]">
              <h2 className="font-gothic text-[clamp(40px,6vw,80px)] text-[var(--bone)] mb-16 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Lords Prayer.</h2>
-             
              <div className="relative w-full h-[200px] flex items-center justify-center">
                <AnimatePresence mode="wait">
                  <motion.div
@@ -167,11 +169,10 @@ export default function Menu() {
                  </motion.div>
                </AnimatePresence>
              </div>
-
              <div className="mt-16 flex gap-3">
                {prayers.map((_, idx) => (
-                 <div 
-                   key={idx} 
+                 <div
+                   key={idx}
                    className={`h-[2px] transition-all duration-1000 ${idx === activePrayerIndex ? 'w-8 bg-[var(--bone)] shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'w-2 bg-[var(--whisper)]/30'}`}
                  />
                ))}
@@ -222,14 +223,13 @@ export default function Menu() {
             exit={{ x: '100%' }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Marble Texture Background */}
-            <div 
+            <div
               className="absolute inset-0 z-0 opacity-20 bg-cover bg-center mix-blend-overlay"
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--abyss)] via-[var(--abyss)]/95 to-[var(--abyss)]/90 backdrop-blur-md" />
 
-            <div className="relative z-10 flex flex-col h-full">
+            <div className="relative z-10 flex flex-col h-full overflow-y-auto">
               <div className="flex flex-col gap-6">
                 {menuItems.map((item, i) => (
                   <motion.div
@@ -238,18 +238,18 @@ export default function Menu() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: 'easeOut' }}
-                    onClick={() => {
-                      setOverlayMessage(item);
-                      setTimeout(() => setIsOpen(false), 400); // Wait for transition
-                    }}
+                    onClick={() => handleMenuItemClick(item)}
                     className="group relative cursor-pointer font-sans text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-50 hover:opacity-100 transition-all duration-500 uppercase pb-2"
                   >
                     {item}
+                    {item === 'PRAYER REQUEST' && (
+                      <span className="ml-3 font-sans text-[10px] text-[var(--blood)] tracking-[0.2em] align-middle">✝</span>
+                    )}
                     <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                   </motion.div>
                 ))}
 
-                <motion.hr 
+                <motion.hr
                   className="menu-divider"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
                 />
@@ -271,7 +271,7 @@ export default function Menu() {
                 </motion.div>
               </div>
 
-              <motion.div 
+              <motion.div
                 className="mt-auto flex flex-col gap-2 font-sans text-[11px] tracking-[0.4em] text-[var(--whisper)] opacity-60 uppercase"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
               >
@@ -282,26 +282,25 @@ export default function Menu() {
           </motion.div>
         )}
       </AnimatePresence>
-      
+
       <AnimatePresence>
         {overlayMessage && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-[99999] flex flex-col justify-between p-12 pointer-events-auto overflow-hidden"
             initial={{ opacity: 0, filter: 'blur(20px)', scale: 1.05 }}
             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
             exit={{ opacity: 0, filter: 'blur(20px)', scale: 0.95 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Dark Marble Cathedral Background Layer */}
-            <div 
+            <div
               className="absolute inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/90 to-[var(--void)]/80 backdrop-blur-xl" />
-            
+
             <div className="relative z-20 flex justify-start w-full">
-               <div 
-                  className="cursor-pointer group p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] transition-colors duration-500" 
+               <div
+                  className="cursor-pointer group p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] transition-colors duration-500"
                   onClick={() => setOverlayMessage(null)}
                 >
                   <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] transition-colors uppercase">
@@ -309,10 +308,9 @@ export default function Menu() {
                   </div>
                 </div>
             </div>
-            
-            {/* Rendered Layout Content */}
+
             <div className="relative z-10 flex-1 flex flex-col w-full mt-12 mb-4 overflow-y-auto overflow-x-hidden no-scrollbar">
-              <motion.div 
+              <motion.div
                 className="w-full m-auto"
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -321,11 +319,17 @@ export default function Menu() {
                 {renderMenuContent()}
               </motion.div>
             </div>
-            
+
             <div className="relative z-20 w-full" />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Prayer Request Modal */}
+      <PrayerRequest
+        isOpen={prayerRequestOpen}
+        onClose={() => setPrayerRequestOpen(false)}
+      />
     </>
   );
 }
