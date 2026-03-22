@@ -18,8 +18,8 @@ export default function Menu() {
     'COLLECTION',
     'LOOKBOOK',
     'SCRIPTURE',
-    'PRAY WITH ME',
-    'PRAYER REQUEST',
+    'THE LORDS PRAYER',
+    'PRAYER REQUESTS',
     'MISSION',
     'ARCHIVE',
   ];
