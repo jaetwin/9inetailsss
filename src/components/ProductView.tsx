@@ -135,7 +135,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[10005] flex flex-col items-center justify-center p-8 overflow-hidden pointer-events-auto"
+        className="fixed inset-0 z-[10005] flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto pointer-events-auto"
         initial={{ opacity: 0, filter: 'blur(20px)' }}
         animate={{ opacity: 1, filter: 'blur(0px)' }}
         exit={{ opacity: 0, filter: 'blur(20px)' }}
@@ -150,7 +150,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
         {/* Close Button */}
         <div
-          className="absolute top-10 left-10 z-[10010] cursor-pointer group p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] transition-colors duration-300"
+          className="absolute top-4 left-4 md:top-10 md:left-10 z-[10010] cursor-pointer group p-3 md:p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] transition-colors duration-300"
           onClick={onClose}
         >
           <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] transition-colors uppercase">
@@ -165,10 +165,10 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
           </motion.h1>
         </div>
 
-        <div className="relative z-10 w-full max-w-[1200px] flex flex-col md:flex-row gap-12 items-center h-full py-20">
+        <div className="relative z-10 w-full max-w-[1200px] flex flex-col md:flex-row gap-8 md:gap-12 items-start md:items-center min-h-full py-16 md:py-20 pt-20 md:pt-20">
 
           {/* Left Side: Thumbnails + Main Image */}
-          <div className="w-full md:w-1/2 h-[50vh] md:h-full flex flex-row items-center justify-center gap-3">
+          <div className="w-full md:w-1/2 h-[40vh] md:h-full flex flex-row items-center justify-center gap-3 flex-shrink-0">
 
             {images.length > 1 && (
               <motion.div
