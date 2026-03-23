@@ -101,31 +101,39 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
       <div className="aspect-[4/5] w-full relative overflow-hidden glass-panel clip-diagonal p-1 transition-all duration-500">
         <div className="w-full h-full relative overflow-hidden clip-diagonal bg-[var(--void)]/40 transition-colors duration-400 flex flex-col justify-between">
 
-          {/* Cycling background image with glitch/flicker effect */}
+          {/* RGB color split glitch cycling effect */}
           <AnimatePresence mode="wait">
             {allImages.length > 0 && isHovered && (
-              <motion.img
-                key={currentImageIdx}
-                src={currentImage ?? ''}
-                alt={p.name}
-                className="absolute inset-0 w-full h-full object-cover"
-                initial={{ opacity: 0, scaleX: 1.05, filter: 'brightness(2) contrast(2)' }}
-                animate={{
-                  opacity: [0, 1, 0.6, 1, 0.8, 1, 0.4, 1],
-                  scaleX: [1.05, 0.98, 1.02, 1, 1],
-                  filter: [
-                    'brightness(2) contrast(2)',
-                    'brightness(1.5) contrast(1.5)',
-                    'brightness(0.8) contrast(1)',
-                    'brightness(1) contrast(1)',
-                    'brightness(1) contrast(1)',
-                  ],
-                  x: [4, -4, 2, -2, 0],
-                }}
-                exit={{ opacity: 0, filter: 'brightness(2)', scaleX: 1.05 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-                style={{ opacity: 0.4 }}
-              />
+              <div key={currentImageIdx} className="absolute inset-0 w-full h-full glitch-container">
+                {/* Red channel */}
+                <img
+                  src={currentImage ?? ''}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover glitch-r"
+                  style={{ mixBlendMode: 'screen' }}
+                />
+                {/* Green channel */}
+                <img
+                  src={currentImage ?? ''}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover glitch-g"
+                  style={{ mixBlendMode: 'screen' }}
+                />
+                {/* Blue channel */}
+                <img
+                  src={currentImage ?? ''}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover glitch-b"
+                  style={{ mixBlendMode: 'screen' }}
+                />
+                {/* Base image on top at low opacity */}
+                <img
+                  src={currentImage ?? ''}
+                  alt={p.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ opacity: 0.35 }}
+                />
+              </div>
             )}
           </AnimatePresence>
 
