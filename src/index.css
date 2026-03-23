@@ -246,20 +246,58 @@ html {
   transform: translateY(-50%);
 }
 
-/* ─── Glitch image transition for product cards ──────────────────────────── */
-@keyframes glitch {
-  0%   { clip-path: inset(0 0 100% 0); opacity: 0; transform: translateX(0); }
-  5%   { clip-path: inset(20% 0 60% 0); opacity: 1; transform: translateX(-4px); }
-  10%  { clip-path: inset(50% 0 30% 0); opacity: 1; transform: translateX(4px); }
-  15%  { clip-path: inset(10% 0 80% 0); opacity: 1; transform: translateX(-2px); }
-  20%  { clip-path: inset(70% 0 10% 0); opacity: 1; transform: translateX(2px); }
-  25%  { clip-path: inset(0 0 0 0);     opacity: 1; transform: translateX(0); }
-  100% { clip-path: inset(0 0 0 0);     opacity: 1; transform: translateX(0); }
+/* ─── RGB color split glitch for product cards ───────────────────────────── */
+@keyframes glitch-r {
+  0%   { transform: translate(0, 0); opacity: 0; }
+  5%   { transform: translate(-6px, 0); opacity: 0.8; }
+  10%  { transform: translate(4px, -2px); opacity: 0.6; }
+  15%  { transform: translate(-8px, 2px); opacity: 0.9; }
+  20%  { transform: translate(6px, 0); opacity: 0.7; }
+  30%  { transform: translate(-4px, -2px); opacity: 0.5; }
+  40%  { transform: translate(2px, 0); opacity: 0.4; }
+  50%  { transform: translate(-2px, 0); opacity: 0.3; }
+  100% { transform: translate(0, 0); opacity: 0; }
 }
 
-.glitch-img {
-  animation: glitch 0.4s steps(1) forwards;
+@keyframes glitch-g {
+  0%   { transform: translate(0, 0); opacity: 0; }
+  5%   { transform: translate(4px, 2px); opacity: 0.6; }
+  10%  { transform: translate(-2px, -4px); opacity: 0.8; }
+  15%  { transform: translate(6px, 0); opacity: 0.5; }
+  20%  { transform: translate(-4px, 2px); opacity: 0.7; }
+  30%  { transform: translate(2px, -2px); opacity: 0.4; }
+  40%  { transform: translate(-2px, 0); opacity: 0.3; }
+  50%  { transform: translate(0, 0); opacity: 0.2; }
+  100% { transform: translate(0, 0); opacity: 0; }
 }
+
+@keyframes glitch-b {
+  0%   { transform: translate(0, 0); opacity: 0; }
+  5%   { transform: translate(8px, -2px); opacity: 0.7; }
+  10%  { transform: translate(-6px, 4px); opacity: 0.5; }
+  15%  { transform: translate(4px, -2px); opacity: 0.8; }
+  20%  { transform: translate(-2px, 0); opacity: 0.6; }
+  30%  { transform: translate(4px, 2px); opacity: 0.4; }
+  40%  { transform: translate(-2px, 0); opacity: 0.3; }
+  50%  { transform: translate(0, 0); opacity: 0.2; }
+  100% { transform: translate(0, 0); opacity: 0; }
+}
+
+.glitch-r {
+  filter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><filter id='r'><feColorMatrix type='matrix' values='1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'/></filter></svg>#r");
+  animation: glitch-r 0.6s steps(1) forwards;
+}
+
+.glitch-g {
+  filter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><filter id='g'><feColorMatrix type='matrix' values='0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0'/></filter></svg>#g");
+  animation: glitch-g 0.6s steps(1) forwards;
+}
+
+.glitch-b {
+  filter: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><filter id='b'><feColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0'/></filter></svg>#b");
+  animation: glitch-b 0.6s steps(1) forwards;
+}
+
 @media (max-width: 767px) {
   /* Reduce motion for performance on mobile */
   .animate-noise {
