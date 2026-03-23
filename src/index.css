@@ -246,7 +246,20 @@ html {
   transform: translateY(-50%);
 }
 
-/* ─── Mobile overrides ───────────────────────────────────────────────────── */
+/* ─── Glitch image transition for product cards ──────────────────────────── */
+@keyframes glitch {
+  0%   { clip-path: inset(0 0 100% 0); opacity: 0; transform: translateX(0); }
+  5%   { clip-path: inset(20% 0 60% 0); opacity: 1; transform: translateX(-4px); }
+  10%  { clip-path: inset(50% 0 30% 0); opacity: 1; transform: translateX(4px); }
+  15%  { clip-path: inset(10% 0 80% 0); opacity: 1; transform: translateX(-2px); }
+  20%  { clip-path: inset(70% 0 10% 0); opacity: 1; transform: translateX(2px); }
+  25%  { clip-path: inset(0 0 0 0);     opacity: 1; transform: translateX(0); }
+  100% { clip-path: inset(0 0 0 0);     opacity: 1; transform: translateX(0); }
+}
+
+.glitch-img {
+  animation: glitch 0.4s steps(1) forwards;
+}
 @media (max-width: 767px) {
   /* Reduce motion for performance on mobile */
   .animate-noise {
