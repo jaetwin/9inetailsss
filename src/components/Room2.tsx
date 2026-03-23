@@ -70,7 +70,7 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
     setIsHovered(true);
     intervalRef.current = setInterval(() => {
       setCurrentImageIdx(prev => (prev + 1) % allImages.length);
-    }, 1000);
+    }, 3000);
   };
 
   const stopCycling = () => {
