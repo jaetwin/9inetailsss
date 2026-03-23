@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { fetchProducts, type ShopifyProduct } from '../lib/shopify';
 
 interface Room2Props {
@@ -50,18 +50,116 @@ function useIsMobile() {
   return isMobile;
 }
 
+// ─── Product Card with cycling images ────────────────────────────────────────
+function ProductCard({ p, idx, isMobile, onProductClick }: {
+  p: any;
+  idx: number;
+  isMobile: boolean;
+  onProductClick: (p: any) => void;
+}) {
+  const allImages: string[] = p.images?.edges?.map((e: any) => e.node.url).filter(Boolean) ?? 
+    (p.image ? [p.image] : []);
+  
+  const [currentImageIdx, setCurrentImageIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const intervalRef = useRef<any>(null);
+
+  // Start cycling on hover/touch, stop on leave
+  const startCycling = () => {
+    if (allImages.length <= 1) return;
+    setIsHovered(true);
+    intervalRef.current = setInterval(() => {
+      setCurrentImageIdx(prev => (prev + 1) % allImages.length);
+    }, 800);
+  };
+
+  const stopCycling = () => {
+    setIsHovered(false);
+    clearInterval(intervalRef.current);
+    setCurrentImageIdx(0);
+  };
+
+  useEffect(() => {
+    return () => clearInterval(intervalRef.current);
+  }, []);
+
+  const currentImage = allImages[currentImageIdx] ?? null;
+
+  return (
+    <div
+      className="w-[85vw] sm:w-[70vw] md:w-[48vw] lg:w-[36vw] group cursor-pointer relative pointer-events-auto"
+      style={{ transform: isMobile ? 'none' : `rotate(${p.rot}deg)` }}
+      onClick={() => onProductClick(p)}
+      onMouseEnter={startCycling}
+      onMouseLeave={stopCycling}
+      // On mobile, cycle on touch
+      onTouchStart={startCycling}
+      onTouchEnd={stopCycling}
+    >
+      <div className="absolute inset-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 shadow-[inset_0_0_50px_rgba(255,238,221,0.05)] pointer-events-none z-10 clip-diagonal" />
+
+      <div className="aspect-[4/5] w-full relative overflow-hidden glass-panel clip-diagonal p-1 transition-all duration-500">
+        <div className="w-full h-full relative overflow-hidden clip-diagonal bg-[var(--void)]/40 transition-colors duration-400 flex flex-col justify-between">
+
+          {/* Cycling background image */}
+          {currentImage && (
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={currentImageIdx}
+                src={currentImage}
+                alt={p.name}
+                className="absolute inset-0 w-full h-full object-cover"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isHovered ? 0.35 : 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, ease: 'easeInOut' }}
+              />
+            </AnimatePresence>
+          )}
+
+          {/* Card content on top of image */}
+          <div className="relative z-10 flex flex-col justify-between h-full p-6 md:p-12">
+            <div className="flex justify-between items-start">
+              <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.1em] uppercase transition-colors duration-300 group-hover:text-[var(--bone)]">
+                ITEM {String(p.id).padStart(3, '0')}
+              </div>
+              <div className="w-7 h-7 md:w-8 md:h-8 rounded-full border border-[var(--whisper)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
+                <span className="text-[14px] font-sans">+</span>
+              </div>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center text-center">
+              <h3 className="font-bebas text-[clamp(40px,8vw,90px)] text-[var(--bone)] tracking-[0.05em] leading-[0.85] opacity-70 group-hover:opacity-100 transition-opacity duration-300 uppercase">
+                {p.name.split(' ').map((word: string, i: number) => <div key={i}>{word}</div>)}
+              </h3>
+            </div>
+
+            <div className="flex justify-between items-end border-t border-[var(--whisper)] pt-4 md:pt-6 mt-4 md:mt-6">
+              <div className="font-sans text-[16px] md:text-[20px] text-[var(--bone)] tracking-[0.1em]">{p.price}</div>
+              <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.2em] group-hover:text-[var(--gold)] transition-colors duration-300 uppercase">ENGAGE</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div className="absolute -bottom-8 -right-4 font-sans text-[11px] text-[var(--whisper)] tracking-[0.2em] rotate-90 origin-top-left hidden md:block uppercase">
+        AESTHETIC // WEARABLE
+      </div>
+    </div>
+  );
+}
+
 export default function Room2({ isVisible, onProductClick }: Room2Props) {
   const [products, setProducts] = useState(FALLBACK_PRODUCTS as any[]);
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    
-   fetchProducts(6).then(shopifyProducts => {
-  console.log('VARIANTS:', JSON.stringify(shopifyProducts[0]?.variants?.edges?.map(e => e.node.title)));
-  if (shopifyProducts.length > 0) {
-    setProducts(shopifyProducts.map(shopifyToDisplayProduct));
-  }
-});
+    fetchProducts(6).then(shopifyProducts => {
+      if (shopifyProducts.length > 0) {
+        setProducts(shopifyProducts.map(shopifyToDisplayProduct));
+      }
+    });
   }, []);
 
   if (!isVisible) return null;
@@ -99,7 +197,6 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
           [ COLLECTION 001 // THE CATALOG ]
         </div>
 
-        {/* Mobile: single centered column. Desktop: alternating left/right */}
         <div className="flex flex-col gap-[10vh] md:gap-[30vh]">
           {products.map((p, idx) => (
             <motion.div
@@ -112,44 +209,12 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
             >
-              <div
-                className="w-[85vw] sm:w-[70vw] md:w-[48vw] lg:w-[36vw] group cursor-pointer relative pointer-events-auto"
-                // No rotation on mobile — prevents clipping off screen
-                style={{ transform: isMobile ? 'none' : `rotate(${p.rot}deg)` }}
-                onClick={() => onProductClick(p)}
-              >
-                <div className="absolute inset-0 bg-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 shadow-[inset_0_0_50px_rgba(255,238,221,0.05)] pointer-events-none z-10 clip-diagonal" />
-
-                <div className="aspect-[4/5] w-full relative overflow-hidden glass-panel clip-diagonal p-1 transition-all duration-500">
-                  <div className="w-full h-full relative overflow-hidden clip-diagonal bg-[var(--void)]/40 active:bg-[var(--void)]/10 md:hover:bg-[var(--void)]/10 transition-colors duration-400 flex flex-col justify-between p-6 md:p-12">
-
-                    <div className="flex justify-between items-start">
-                      <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.1em] uppercase transition-colors duration-300 group-hover:text-[var(--bone)]">
-                        ITEM {String(p.id).padStart(3, '0')}
-                      </div>
-                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-full border border-[var(--whisper)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
-                        <span className="text-[14px] font-sans">+</span>
-                      </div>
-                    </div>
-
-                    <div className="flex-1 flex items-center justify-center text-center">
-                      <h3 className="font-bebas text-[clamp(40px,8vw,90px)] text-[var(--bone)] tracking-[0.05em] leading-[0.85] opacity-70 group-hover:opacity-100 transition-opacity duration-300 uppercase">
-                        {p.name.split(' ').map((word: string, i: number) => <div key={i}>{word}</div>)}
-                      </h3>
-                    </div>
-
-                    <div className="flex justify-between items-end border-t border-[var(--whisper)] pt-4 md:pt-6 mt-4 md:mt-6">
-                      <div className="font-sans text-[16px] md:text-[20px] text-[var(--bone)] tracking-[0.1em]">{p.price}</div>
-                      <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.2em] group-hover:text-[var(--gold)] transition-colors duration-300 uppercase">ENGAGE</div>
-                    </div>
-
-                  </div>
-                </div>
-
-                <div className="absolute -bottom-8 -right-4 font-sans text-[11px] text-[var(--whisper)] tracking-[0.2em] rotate-90 origin-top-left hidden md:block uppercase">
-                  AESTHETIC // WEARABLE
-                </div>
-              </div>
+              <ProductCard
+                p={p}
+                idx={idx}
+                isMobile={isMobile}
+                onProductClick={onProductClick}
+              />
             </motion.div>
           ))}
         </div>
