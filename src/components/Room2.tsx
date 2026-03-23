@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { fetchProducts, type ShopifyProduct } from '../lib/shopify';
 
 interface Room2Props {
@@ -103,18 +103,12 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
 
           {/* Cycling background image */}
           {currentImage && (
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={currentImageIdx}
-                src={currentImage}
-                alt={p.name}
-                className="absolute inset-0 w-full h-full object-cover"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: isHovered ? 0.35 : 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4, ease: 'easeInOut' }}
-              />
-            </AnimatePresence>
+            <img
+              src={currentImage}
+              alt={p.name}
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+              style={{ opacity: isHovered ? 0.35 : 0 }}
+            />
           )}
 
           {/* Card content on top of image */}
