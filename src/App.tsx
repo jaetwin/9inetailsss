@@ -76,7 +76,7 @@ export default function App() {
 
         <Cursor />
         <Grain />
-        <Menu />
+        <Menu onProductClick={(p: any) => setSelectedProduct(p)} />
         
         <div className="fixed inset-4 border border-[var(--whisper)] pointer-events-none z-[9990] opacity-30 mix-blend-overlay shadow-[inset_0_0_50px_rgba(255,238,221,0.05)]" />
         <div className="fixed inset-0 pointer-events-none z-[9980] bg-[radial-gradient(ellipse_at_center,_transparent_40%,_var(--void)_120%)] opacity-80" />
