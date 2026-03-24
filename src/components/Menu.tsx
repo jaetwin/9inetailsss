@@ -16,14 +16,14 @@ export default function Menu() {
 
   // These names MUST match the switch cases and click handler below exactly
   const menuItems = [
-    'COLLECTION',
-    'LOOKBOOK',
-    'SCRIPTURE',
-    'THE LORDS PRAYER',
-    'PRAYER REQUEST',
-    'MISSION',
-    'ARCHIVE',
-  ];
+  'COLLECTION',
+  // 'LOOKBOOK',
+  'SCRIPTURE',
+  'THE LORDS PRAYER',
+  'PRAYER REQUEST',
+  'MISSION',
+  // 'ARCHIVE',
+];
 
   const prayers = [
     "Our Father in heaven.",
