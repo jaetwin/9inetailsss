@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
 import PrayerRequest from './PrayerRequest';
+import { fetchProducts } from '../lib/shopify';
 
-export default function Menu() {
+export default function Menu({ onProductClick }: { onProductClick?: (product: any) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [overlayMessage, setOverlayMessage] = useState<string | null>(null);
   const [prayerRequestOpen, setPrayerRequestOpen] = useState(false);
+  const [rekoeProduct, setRekoeProduct] = useState<any>(null);
   const { cartItems, setIsCheckoutOpen } = useCart();
 
   const toggleMenu = () => {
@@ -14,16 +16,23 @@ export default function Menu() {
     setOverlayMessage(null);
   };
 
+  useEffect(() => {
+    fetchProducts(6).then(products => {
+      const rekoe = products.find((p: any) => p.title.toUpperCase().includes('R.E.K.O.E'));
+      if (rekoe) setRekoeProduct(rekoe);
+    });
+  }, []);
+
   // These names MUST match the switch cases and click handler below exactly
   const menuItems = [
-  'COLLECTION',
-  // 'LOOKBOOK',
-  'SCRIPTURE',
-  'THE LORDS PRAYER',
-  'PRAYER REQUEST',
-  'MISSION',
-  // 'ARCHIVE',
-];
+    'COLLECTION',
+    // 'LOOKBOOK',
+    'SCRIPTURE',
+    'THE LORDS PRAYER',
+    'PRAYER REQUEST',
+    'MISSION',
+    // 'ARCHIVE',
+  ];
 
   const prayers = [
     "Our Father in heaven.",
@@ -69,20 +78,61 @@ export default function Menu() {
       case 'COLLECTION':
         return (
           <div className="flex flex-wrap gap-12 justify-center items-center max-w-6xl w-full mx-auto">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex flex-col gap-6 group">
-                <div className="w-[320px] h-[440px] bg-[var(--whisper)]/5 border border-[var(--whisper)]/20 overflow-hidden relative transition-transform duration-700 group-hover:-translate-y-4">
-                  <div className="absolute inset-0 bg-gradient-to-t from-[var(--void)]/70 to-transparent z-10" />
-                  <div className="absolute inset-0 flex items-center justify-center font-sans text-[12px] text-[var(--bone)]/30 tracking-[0.2em] uppercase">FILE_NOT_FOUND</div>
-                </div>
-                <div>
-                  <div className="font-bebas text-[36px] tracking-[0.05em] text-[var(--bone)] group-hover:text-[var(--blood)] transition-colors duration-500">
-                    GARMENT {String(i).padStart(3, '0')}
+            {[1, 2, 3].map((i) => {
+              const isRekoe = i === 1 && rekoeProduct;
+              const imageUrl = isRekoe ? rekoeProduct.images.edges[0]?.node.url : null;
+              return (
+                <div
+                  key={i}
+                  className="flex flex-col gap-6 group cursor-pointer"
+                  onClick={() => {
+                    if (isRekoe && onProductClick) {
+                      const variant = rekoeProduct.variants.edges[0]?.node;
+                      const { amount, currencyCode } = rekoeProduct.priceRange.minVariantPrice;
+                      const price = new Intl.NumberFormat('en-US', {
+                        style: 'currency', currency: currencyCode, maximumFractionDigits: 0,
+                      }).format(Number(amount));
+                      onProductClick({
+                        id: 1,
+                        name: rekoeProduct.title.toUpperCase(),
+                        price,
+                        shopifyVariantId: variant?.id,
+                        shopifyHandle: rekoeProduct.handle,
+                        description: rekoeProduct.description ?? null,
+                        image: imageUrl,
+                        images: rekoeProduct.images,
+                        variants: rekoeProduct.variants,
+                      });
+                      setOverlayMessage(null);
+                      setIsOpen(false);
+                    }
+                  }}
+                >
+                  <div className="w-[320px] h-[440px] bg-[var(--whisper)]/5 border border-[var(--whisper)]/20 overflow-hidden relative transition-transform duration-700 group-hover:-translate-y-4">
+                    <div className="absolute inset-0 bg-gradient-to-t from-[var(--void)]/70 to-transparent z-10" />
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={rekoeProduct.title} className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center font-sans text-[12px] text-[var(--bone)]/30 tracking-[0.2em] uppercase">FILE_NOT_FOUND</div>
+                    )}
                   </div>
-                  <div className="font-sans text-[13px] text-[var(--faded)] tracking-[0.2em] mt-1">$120.00 USD</div>
+                  <div>
+                    <div className="font-bebas text-[36px] tracking-[0.05em] text-[var(--bone)] group-hover:text-[var(--blood)] transition-colors duration-500">
+                      {isRekoe ? rekoeProduct.title.toUpperCase() : `GARMENT ${String(i).padStart(3, '0')}`}
+                    </div>
+                    <div className="font-sans text-[13px] text-[var(--faded)] tracking-[0.2em] mt-1">
+                      {isRekoe
+                        ? new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: rekoeProduct.priceRange.minVariantPrice.currencyCode,
+                            maximumFractionDigits: 0,
+                          }).format(Number(rekoeProduct.priceRange.minVariantPrice.amount)) + ' USD'
+                        : '$120.00 USD'}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       case 'MISSION':
