@@ -1,6 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
+
+// ─── Magnetic Micro-Interaction ──────────────────────────────────────────────
+function MagneticWrapper({ children, strength = 0.3 }: { children: React.ReactNode, strength?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouse = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const { clientX, clientY } = e;
+    const { height, width, left, top } = ref.current.getBoundingClientRect();
+    const middleX = clientX - (left + width / 2);
+    const middleY = clientY - (top + height / 2);
+    setPosition({ x: middleX * strength, y: middleY * strength });
+  };
+
+  const reset = () => setPosition({ x: 0, y: 0 });
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={reset}
+      animate={{ x: position.x, y: position.y }}
+      transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
+      className="inline-block"
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 interface ProductViewProps {
   product: any;
@@ -58,6 +88,7 @@ function colorToCSS(colorName: string): string {
 }
 
 export default function ProductView({ product, onClose }: ProductViewProps) {
+  const [isExiting, setIsExiting] = useState(false);
   const { addToCart, setIsCheckoutOpen } = useCart();
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -65,18 +96,30 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   useEffect(() => {
-    // Only lock body scroll on desktop — on mobile we need it to scroll
+    // Determine if we need to lock scroll on desktop
     if (window.innerWidth >= 768) {
       document.body.style.overflow = 'hidden';
     }
+    // Trigger global 3D scene cinematic push-back
+    document.body.classList.add('overlay-open');
+    
     setSelectedImageIdx(0);
     setSelectedSize(null);
     setSelectedColor(null);
     setShowSizeGuide(false);
     return () => {
-      document.body.style.overflow = 'auto';
+      // Body cleanup handled by handleClose to synchronize with cross-fade
     };
   }, [product]);
+
+  const handleClose = () => {
+    setIsExiting(true);
+    document.body.style.overflow = '';
+    document.body.classList.remove('overlay-open');
+    setTimeout(() => {
+      onClose();
+    }, 700);
+  };
 
   const images: { url: string; altText: string }[] =
     product.images?.edges?.map((e: any) => e.node) ??
@@ -132,28 +175,30 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
   return (
     <AnimatePresence>
-      <motion.div
-        className="fixed inset-0 z-[10005] flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto pointer-events-auto bg-[var(--void)]"
-        initial={{ opacity: 0, filter: 'blur(20px)' }}
-        animate={{ opacity: 1, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, filter: 'blur(20px)' }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-      >
-        {/* Background — fixed so it covers full screen even when scrolling on mobile */}
-        <div
-          className="fixed inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
-          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
-        />
-        <div className="fixed inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/90 to-[var(--void)]/80 backdrop-blur-xl" />
+      {!isExiting && (
+        <motion.div
+          className="fixed inset-0 z-[10005] flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto pointer-events-auto bg-[var(--void)]/40 backdrop-blur-3xl"
+          initial={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
+        {/* Background Grain/Texture — Fixed */}
+        <div className="fixed inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/60 to-[var(--void)]/40 pointer-events-none" />
+        <div className="fixed inset-0 z-0 opacity-[0.15] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')`, backgroundSize: 'cover' }} />
 
         {/* Close Button */}
-        <div
-          className="fixed top-4 left-4 md:top-10 md:left-10 z-[10010] cursor-pointer group p-3 md:p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] active:bg-[var(--bone)] transition-colors duration-300"
-          onClick={onClose}
-        >
-          <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] active:text-[var(--void)] transition-colors uppercase">
-            RETURN TO SCENE
-          </div>
+        <div className="fixed top-4 left-4 md:top-10 md:left-10 z-[10010]">
+          <MagneticWrapper strength={0.4}>
+            <div
+              className="cursor-pointer group p-3 md:p-4 border border-[var(--whisper)]/20 hover:bg-[var(--bone)] active:bg-[var(--bone)] transition-all duration-700"
+              onClick={handleClose}
+            >
+              <div className="font-sans text-[14px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--void)] active:text-[var(--void)] transition-all duration-700 uppercase">
+                RETURN TO SCENE
+              </div>
+            </div>
+          </MagneticWrapper>
         </div>
 
         {/* Ambient background text */}
@@ -171,18 +216,24 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
             {images.length > 1 && (
               <motion.div
                 className="flex flex-col gap-2 flex-shrink-0"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
+                initial="hidden" animate="show"
+                variants={{
+                  hidden: { opacity: 0 },
+                  show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.4 } }
+                }}
               >
                 {images.map((img, i) => (
-                  <div
+                  <motion.div
                     key={i}
+                    variants={{
+                      hidden: { opacity: 0, scale: 0.8, x: -10 },
+                      show: { opacity: 1, scale: 1, x: 0, transition: { type: 'spring' } }
+                    }}
                     onClick={() => setSelectedImageIdx(i)}
                     className={`w-10 h-10 border cursor-pointer overflow-hidden transition-all duration-300 flex-shrink-0 bg-[#1c1c1c] ${
                       i === selectedImageIdx
-                        ? 'border-[var(--bone)] opacity-100'
-                        : 'border-[var(--whisper)]/30 opacity-40 hover:opacity-70'
+                        ? 'border-[var(--bone)] opacity-100 scale-110'
+                        : 'border-[var(--whisper)]/30 opacity-40 hover:opacity-70 hover:scale-105'
                     }`}
                   >
                     <img
@@ -191,7 +242,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                       className="w-full h-full object-contain"
                       style={{ background: '#1c1c1c' }}
                     />
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             )}
@@ -416,17 +467,17 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 onClick={() => {
                   if (!needsSelection && !isSoldOut) {
                     addToCart({ ...product, shopifyVariantId: selectedVariant?.id });
-                    onClose();
+                    handleClose();
                     setIsCheckoutOpen(true);
                   }
                 }}
                 disabled={needsSelection || isSoldOut}
-                className={`flex-1 font-sans text-[14px] font-bold tracking-[0.3em] py-4 uppercase transition-colors duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] ${
+                className={`flex-1 font-sans text-[14px] font-bold tracking-[0.3em] py-4 uppercase transition-all duration-700 shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] ${
                   isSoldOut
-                    ? 'bg-[var(--whisper)]/10 text-[var(--faded)]/50 cursor-not-allowed'
+                    ? 'bg-transparent border border-[var(--whisper)]/20 text-[var(--faded)]/50 cursor-pointer hover:bg-[var(--whisper)]/10 hover:text-[var(--bone)]'
                     : needsSelection
-                    ? 'bg-[var(--whisper)]/20 text-[var(--faded)] cursor-not-allowed'
-                    : 'bg-[var(--bone)] text-[var(--void)] hover:bg-[var(--gold)]'
+                    ? 'bg-transparent border border-[var(--whisper)]/20 text-[var(--faded)] cursor-not-allowed'
+                    : 'bg-[var(--bone)] text-[var(--void)] border border-transparent hover:bg-[var(--gold)]'
                 }`}
               >
                 {isSoldOut ? 'SOLD OUT' : needsSelection ? `SELECT ${!selectedColor && colors.length > 1 ? 'A COLOR' : 'A SIZE'}` : 'ACQUIRE'}
@@ -437,6 +488,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
         </div>
       </motion.div>
+      )}
     </AnimatePresence>
   );
 }
