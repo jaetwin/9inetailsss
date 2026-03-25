@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
 
@@ -6,6 +6,15 @@ export default function Checkout() {
   const { isCheckoutOpen, setIsCheckoutOpen, cartItems, cartTotal, removeFromCart, updateQuantity, clearCart, goToShopifyCheckout, shopifyEnabled } = useCart();
   const [step, setStep] = useState(1);
   const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (isCheckoutOpen) {
+      document.body.classList.add('overlay-open');
+    } else {
+      document.body.classList.remove('overlay-open');
+    }
+    return () => document.body.classList.remove('overlay-open');
+  }, [isCheckoutOpen]);
 
   if (!isCheckoutOpen) return null;
 
