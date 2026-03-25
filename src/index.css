@@ -189,6 +189,29 @@ html {
   border: none;
 }
 
+/* ─── Limited Badge ─────────────────────────────────────────────────────────── */
+.badge-limited {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--blood);
+  color: var(--blood-bright);
+  background: rgba(107, 20, 20, 0.15);
+  line-height: 1.4;
+}
+
+/* ─── Scripture Card Accent Bar ─────────────────────────────────────────────── */
+.scripture-accent-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--blood), var(--blood-bright), transparent);
+}
+
 /* Scroll Container Utilities */
 .html-scroll-container {
   width: 100vw;
