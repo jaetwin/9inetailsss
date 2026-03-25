@@ -14,6 +14,8 @@ import Scene3D from './components/Scene3D';
 import ProductView from './components/ProductView';
 import { CartProvider } from './CartContext';
 import Checkout from './components/Checkout';
+import EmailSignup from './components/EmailSignup';
+import { ToastProvider } from './components/Toast';
 
 // Error Boundary Interface
 interface ErrorBoundaryProps { children: React.ReactNode; fallback: React.ReactNode; }
@@ -35,6 +37,7 @@ const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 export default function App() {
   const [showRoom2, setShowRoom2] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isEmailOpen, setIsEmailOpen] = useState(false);
   
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('muted') === 'true';
@@ -66,6 +69,7 @@ export default function App() {
   };
 
   return (
+    <ToastProvider>
     <CartProvider>
       <div
         className="relative w-[100vw] h-[100vh] bg-[var(--void)] cursor-none"
@@ -104,7 +108,7 @@ export default function App() {
             </div>
           )}
 
-          <div className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-none">
+          <div id="main-scene" className="w-full h-full bg-[var(--void)] absolute inset-0 pointer-events-none">
             <ErrorBoundary fallback={<div className="p-8 text-[var(--blood)]">Failed to load 3D application.</div>}>
               <Canvas
                 camera={{ position: [0, 0, 14], fov: 45 }}
@@ -119,7 +123,7 @@ export default function App() {
               >
                 <ambientLight intensity={0.10} color="#ffffff" />
                 <ScrollControls
-                  pages={8.5}
+                  pages={9.5}
                   // Snappier damping on mobile
                   damping={isMobile ? 0.3 : 0.15}
                   distance={1.2}
@@ -131,21 +135,29 @@ export default function App() {
                       <Room2 isVisible={true} onProductClick={(p: any) => setSelectedProduct(p)} />
                       <Room3 />
                       <Room4 />
-                      <Room5 />
+                      <Room5 
+                        isMobile={isMobile} 
+                        setEmailOpen={setIsEmailOpen} 
+                        isOverlayOpen={isEmailOpen || !!selectedProduct}
+                      />
                     </div>
                   </Scroll>
                 </ScrollControls>
               </Canvas>
             </ErrorBoundary>
             
-            {selectedProduct && (
-              <ProductView product={selectedProduct} onClose={() => setSelectedProduct(null)} />
-            )}
+            <AnimatePresence mode="wait">
+              {selectedProduct && (
+                <ProductView key="product-view" product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+              )}
+            </AnimatePresence>
           </div>
         </main>
         
         <Checkout />
+        <EmailSignup isOpen={isEmailOpen} onClose={() => setIsEmailOpen(false)} />
       </div>
     </CartProvider>
+    </ToastProvider>
   );
 }

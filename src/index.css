@@ -100,6 +100,31 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ─── Global State Classes ─────────────────────────────────────────────── */
+body.overlay-open #main-scene {
+  transform: scale(0.95);
+  pointer-events: none;
+}
+#main-scene {
+  transition: transform 0.8s var(--ease-out-expo);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 
+  Stable Sanctuary Card
+  We rely on a high-opacity gradient instead of backdrop-filter to prevent 
+  the GPU from culling the element during heavy cinematic blurs.
+*/
+.sanctuary-card {
+  transition: opacity 0.8s var(--ease-out-expo), transform 0.8s var(--ease-out-expo);
+}
+
+body.overlay-open .sanctuary-card {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
 /* Prevent text size adjustment on mobile */
 html {
   -webkit-text-size-adjust: 100%;
