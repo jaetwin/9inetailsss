@@ -65,7 +65,13 @@ function ScrollProgress() {
 }
 
 // ─── Room5 ───────────────────────────────────────────────────────────────────
-export default function Room5({ isMobile, setEmailOpen }: { isMobile: boolean, setEmailOpen: (v: boolean) => void }) {
+interface Room5Props {
+  isMobile: boolean;
+  setEmailOpen: (v: boolean) => void;
+  isOverlayOpen: boolean;
+}
+
+export default function Room5({ isMobile, setEmailOpen, isOverlayOpen }: Room5Props) {
   const { d, h, m, s, expired } = useCountdown();
 
   return (
@@ -75,12 +81,20 @@ export default function Room5({ isMobile, setEmailOpen }: { isMobile: boolean, s
       <div className="w-full bg-transparent relative min-h-screen flex flex-col items-center justify-center pt-[8vh] pb-[6vh] pointer-events-none">
 
         <motion.div 
-          className="flex flex-col items-center justify-center px-6 py-16 md:px-16 md:py-24 w-[96vw] max-w-[1400px] bg-gradient-to-b from-[var(--void)]/90 to-[var(--void)]/70 backdrop-blur-md border border-[var(--whisper)]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-sm pointer-events-auto"
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
+          className="sanctuary-card relative flex flex-col items-center justify-center px-6 py-16 md:px-16 md:py-24 w-[96vw] max-w-[1400px] bg-gradient-to-b from-[var(--void)]/95 via-[var(--void)]/90 to-[var(--void)]/85 border border-[var(--whisper)]/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] rounded-sm pointer-events-auto overflow-hidden"
+          initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
+          whileInView={!isOverlayOpen ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : undefined}
+          animate={isOverlayOpen ? { 
+            opacity: 0.3, 
+            scale: 0.98, 
+            filter: 'blur(8px)',
+            transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } 
+          } : undefined}
           viewport={{ once: true, margin: '-100px' }}
           transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
         >
+          {/* Internal Grain for texture depth */}
+          <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')] bg-cover" />
 
           {/* Main heading */}
           <div className="text-center">
@@ -200,4 +214,3 @@ export default function Room5({ isMobile, setEmailOpen }: { isMobile: boolean, s
     </>
   );
 }
-
