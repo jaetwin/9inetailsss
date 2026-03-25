@@ -2,11 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useToast } from './Toast';
 
-// ─── Config ──────────────────────────────────────────────────────────────────
-// Set VITE_MAILCHIMP_URL in your .env file to your Mailchimp (or other) form URL.
-// e.g. https://yourlist.us1.list-manage.com/subscribe/post?u=XXXX&amp;id=XXXX
-const MAILCHIMP_URL = import.meta.env.VITE_MAILCHIMP_URL as string | undefined;
-
 // ─── Email validation ─────────────────────────────────────────────────────────
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -52,55 +47,31 @@ export default function EmailSignup({ isOpen, onClose }: EmailSignupProps) {
   };
 
   const handleSubmit = async () => {
-    if (!isValidEmail(email)) return;
-    setStatus('submitting');
-
-    if (!MAILCHIMP_URL) {
-      // Dev mode fallback
-      setTimeout(() => {
-        setStatus('success');
-        toast('transmission received (dev mode)', 'success');
-      }, 1000);
+    if (!isValidEmail(email)) {
+      toast('enter a valid email', 'error');
       return;
     }
+    setStatus('submitting');
 
     try {
-      const url = new URL(MAILCHIMP_URL);
-      url.pathname = url.pathname.replace('/post', '/post-json');
-      url.searchParams.append('EMAIL', email.trim());
-      if (name.trim()) url.searchParams.append('FNAME', name.trim());
-      
-      const callbackName = 'mcCallback_' + Math.round(100000 * Math.random());
-      url.searchParams.set('c', callbackName);
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), name: name.trim() }),
+      });
 
-      const script = document.createElement('script');
-      script.src = url.toString();
+      const data = await res.json();
 
-      (window as any)[callbackName] = (data: any) => {
-        delete (window as any)[callbackName];
-        document.body.removeChild(script);
-
-        if (data.result === 'success') {
-          setStatus('success');
-          toast('transmission received', 'success');
-        } else {
-          setStatus('error');
-          // MailChimp errors get cryptic (e.g. string starting with numbers), simplify it if needed
-          toast('transmission failed — try again', 'error');
-        }
-      };
-
-      script.onerror = () => {
-        delete (window as any)[callbackName];
-        document.body.removeChild(script);
+      if (res.ok && data.result === 'success') {
+        setStatus('success');
+        toast('transmission received', 'success');
+      } else {
         setStatus('error');
-        toast('network transmission failed', 'error');
-      };
-
-      document.body.appendChild(script);
+        toast(data.error ?? 'transmission failed — try again', 'error');
+      }
     } catch {
       setStatus('error');
-      toast('transmission failed — check URL format', 'error');
+      toast('network error — check connection', 'error');
     }
   };
 
