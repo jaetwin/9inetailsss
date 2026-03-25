@@ -200,3 +200,4 @@ export default function Room5({ isMobile, setEmailOpen }: { isMobile: boolean, s
     </>
   );
 }
+
