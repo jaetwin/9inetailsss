@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useToast } from './Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
 import PrayerRequest from './PrayerRequest';
@@ -10,6 +11,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
   const [prayerRequestOpen, setPrayerRequestOpen] = useState(false);
   const [rekoeProduct, setRekoeProduct] = useState<any>(null);
   const { cartItems, setIsCheckoutOpen } = useCart();
+  const { toast } = useToast();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -23,28 +25,59 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
     });
   }, []);
 
+  // ESC key and Cinematic UI trigger
+  useEffect(() => {
+    // Esc handler
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (overlayMessage) { setOverlayMessage(null); return; }
+      if (isOpen) { setIsOpen(false); }
+    };
+    window.addEventListener('keydown', handler);
+    
+    // Cinematic 3D depth push
+    if (isOpen) {
+      document.body.classList.add('overlay-open');
+    } else {
+      document.body.classList.remove('overlay-open');
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handler);
+    };
+  }, [isOpen, overlayMessage]);
+
+  // Copy verse to clipboard
+  const copyVerse = useCallback(async (text: string, ref: string) => {
+    try {
+      await navigator.clipboard.writeText(`${text} — ${ref}`);
+      toast('verse copied', 'success');
+    } catch {
+      toast('copy failed', 'error');
+    }
+  }, [toast]);
+
   // These names MUST match the switch cases and click handler below exactly
   const menuItems = [
     'COLLECTION',
-    // 'LOOKBOOK',
     'SCRIPTURE',
     'THE LORDS PRAYER',
     'PRAYER REQUEST',
     'MISSION',
-    // 'ARCHIVE',
+    'THE ARCHITECTS',
   ];
 
   const prayers = [
     "Our Father in heaven.",
     "Hallowed be your name.",
     "Your kingdom come.",
-    "Your kingdom come.",
-    "On earth as it is in heaven.",
+    "Your will be done on earth as it is in heaven.",
     "Give us this day our daily bread.",
-    "And forgive us our debts.",
-    "As we also have forgiven our debtors.",
+    "And forgive us our debts, as we also have forgiven our debtors.",
     "And lead us not into temptation.",
-    "But deliver us from evil."
+    "But deliver us from evil.",
+    "For yours is the kingdom, and the power, and the glory forever.",
+    "Amen."
   ];
 
   const [activePrayerIndex, setActivePrayerIndex] = useState(0);
@@ -146,52 +179,150 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             </div>
           </div>
         );
-      case 'LOOKBOOK':
+      case 'THE ARCHITECTS': {
+        const architects = [
+          {
+            name: 'Jeatwin',
+            role: 'Founder',
+            instagram: 'jaetwin330',
+            avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-3.cdninstagram.com/v/t51.82787-19/640442060_17875859934510598_6095791827661713176_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gFlfOx_hCxiymVLM67G99Hx9AOKms0FUh_FlNy83V44Va0pV3Y3hwMn2rBBVkoobzmb1WtIMgosp9c8-1jEFTwT&_nc_ohc=xglI2TxQO-gQ7kNvwGf6h0W&_nc_gid=PAU8YwKpWcGFzlp-BeMc2g&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Afx8C9vHtX_ylIC5Q2jJe5Vt74STPyns_n0B-kYsvAxwGw&oe=69CA2932&_nc_sid=8b3546'),
+            verse: 'Proverbs 16:3',
+          },
+          {
+            name: 'Sh0kr / Germanized',
+            role: 'Co-Founder · Web Architect',
+            instagram: 'purelybasedgod',
+            avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-3.cdninstagram.com/v/t51.82787-19/601409654_17877386079446435_7677971554891352608_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDI0LmMyIn0&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gHV3uqxsW8qjECD2PTcIurW8P44RfGS1bKcp2xIUO5Q8mkUfQtBOzv3I5pVoAezd43DQXuocudN4Ptj_INtUOqz&_nc_ohc=jIj4ttT8G_gQ7kNvwHUepwY&_nc_gid=VNeg1-fCFiCuiiAXEtEG7w&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfyRE2XlmgjhuicICiaZNd_N9sJAVeExFJyHuoIPCIEijw&oe=69CA0CF1&_nc_sid=8b3546'),
+            verse: 'Colossians 3:23',
+          },
+          {
+            name: 'Jwill',
+            role: 'Co-Founder',
+            instagram: '5jwill5',
+            avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-1.cdninstagram.com/v/t51.82787-19/639749884_17855816937621495_7666930371352852784_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gH0yAjjfH9IegMWD0e1r4YiRDnLw4ESaKVm6Nq4a6BaOHb8f7cKMnSUTX58VvFvtAEMYbJbxKmAFaKjF7Re2B9c&_nc_ohc=rn4h0m3tCL0Q7kNvwEXIwHN&_nc_gid=cful5A3HJaKfvNzmxSqNtw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfyZDSeeQcY-4OCXnBebbGPqGekBBMkmep9y9QQFKP9lPQ&oe=69CA0375&_nc_sid=8b3546'),
+            verse: 'Romans 8:28',
+          },
+        ];
         return (
-          <div className="flex flex-col items-center justify-center w-full max-w-6xl mx-auto gap-12">
-            <h2 className="font-gothic text-[clamp(40px,6vw,80px)] text-[var(--bone)] tracking-normal mb-8 drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">Glorifying Garments</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 w-full">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="aspect-[4/5] bg-[var(--whisper)]/5 border border-[var(--whisper)]/20 overflow-hidden relative group cursor-pointer">
-                  <div className="absolute inset-0 bg-[var(--void)]/50 group-hover:bg-transparent transition-colors duration-700" />
-                  <div className="absolute bottom-6 left-6 font-sans text-[12px] text-[var(--bone)]/50 tracking-[0.2em] uppercase">{`VISUAL 00${i}`}</div>
-                </div>
+          <div className="max-w-5xl mx-auto text-center px-4 py-4">
+            <div className="mb-12">
+              <div className="font-mono text-[10px] tracking-[0.4em] text-[var(--gold)] uppercase mb-4">
+                Those who build for the reborn
+              </div>
+              <h2 className="font-sans text-[clamp(36px,7vw,90px)] text-[var(--bone)] tracking-[0.05em] leading-none">
+                THE ARCHITECTS
+              </h2>
+              <div className="w-16 h-[1px] bg-[var(--whisper)]/40 mx-auto mt-8" />
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-10 md:gap-6 justify-center items-center md:items-start">
+              {architects.map((a, i) => (
+                <motion.div
+                  key={a.instagram}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.7, delay: 0.1 + i * 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex flex-col items-center gap-5 group w-full md:w-[280px]"
+                >
+                  {/* Avatar */}
+                  <a
+                    href={`https://www.instagram.com/${a.instagram}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative block"
+                    aria-label={`${a.name} on Instagram`}
+                  >
+                    {/* Outer glow ring */}
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--bone)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110" />
+                    {/* Border ring */}
+                    <div className="relative w-[140px] h-[140px] rounded-full p-[2px] bg-gradient-to-br from-[var(--whisper)]/60 via-[var(--bone)]/10 to-[var(--whisper)]/20 group-hover:from-[var(--bone)]/80 group-hover:via-[var(--gold)]/30 transition-all duration-700">
+                      <div className="w-full h-full rounded-full overflow-hidden bg-[var(--ash)]">
+                        <img
+                          src={a.avatar}
+                          alt={a.name}
+                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {/* Instagram icon overlay */}
+                    <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[var(--void)] border border-[var(--whisper)]/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className="font-mono text-[9px] text-[var(--gold)]">IG</span>
+                    </div>
+                  </a>
+
+                  {/* Info */}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="font-sans text-[clamp(20px,3vw,28px)] text-[var(--bone)] tracking-[0.08em] leading-none uppercase">
+                      {a.name}
+                    </div>
+                    <div className="font-mono text-[10px] tracking-[0.25em] text-[var(--faded)] uppercase">
+                      {a.role}
+                    </div>
+                    <div className="w-4 h-[1px] bg-[var(--whisper)]/30" />
+                    <a
+                      href={`https://www.instagram.com/${a.instagram}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[10px] tracking-[0.2em] text-[var(--whisper)]/50 hover:text-[var(--gold)] transition-colors duration-300 uppercase"
+                    >
+                      @{a.instagram}
+                    </a>
+                  </div>
+                </motion.div>
               ))}
             </div>
+
+            {/* Footer verse */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 1 }}
+              className="mt-16 flex flex-col items-center gap-3"
+            >
+              <div className="font-serif italic text-[15px] text-[var(--parchment)]/60 max-w-[500px] leading-relaxed">
+                &quot;For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.&quot;
+              </div>
+              <div className="font-mono text-[10px] tracking-[0.3em] text-[var(--faded)]/50 uppercase">— Ephesians 2:10</div>
+            </motion.div>
           </div>
         );
-      case 'SCRIPTURE':
+      }
+
+      case 'SCRIPTURE': {
+        const verses = [
+          { text: 'And let us not grow weary of doing good, for in due season we will reap, if we do not give up.', ref: 'Galatians 6:9' },
+          { text: 'For God gave us a spirit not of fear but of power and love and self-control.', ref: '2 Timothy 1:7' },
+          { text: 'I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world.', ref: 'John 16:33' },
+          { text: 'Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me.', ref: 'Psalm 23:4' },
+          { text: 'Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you.', ref: 'Isaiah 41:10' },
+        ];
         return (
           <div className="max-w-4xl mx-auto text-center pb-20 mt-12 px-4">
             <h2 className="font-gothic text-[clamp(36px,7vw,90px)] text-[var(--bone)] mb-12 tracking-normal leading-none drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">The Word Of The LORD</h2>
             <div className="font-serif text-[clamp(18px,3vw,32px)] tracking-wide text-[var(--bone)] leading-relaxed space-y-12">
-              <div className="flex flex-col items-center">
-                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"And let us not grow weary of doing good, for in due season we will reap, if we do not give up."</motion.p>
-                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– Galatians 6:9</p>
-              </div>
-              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
-              <div className="flex flex-col items-center">
-                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"For God gave us a spirit not of fear but of power and love and self-control."</motion.p>
-                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– 2 Timothy 1:7</p>
-              </div>
-              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
-              <div className="flex flex-col items-center">
-                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world."</motion.p>
-                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– John 16:33</p>
-              </div>
-              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
-              <div className="flex flex-col items-center">
-                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me."</motion.p>
-                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– Psalm 23:4</p>
-              </div>
-              <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />
-              <div className="flex flex-col items-center">
-                <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">"Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you."</motion.p>
-                <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase mt-4 font-sans not-italic">– Isaiah 41:10</p>
-              </div>
+              {verses.map((v, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />}
+                  <div className="flex flex-col items-center group">
+                    <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">&quot;{v.text}&quot;</motion.p>
+                    <div className="flex items-center gap-4 mt-4">
+                      <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase font-sans not-italic">– {v.ref}</p>
+                      <button
+                        onClick={() => copyVerse(`"${v.text}"`, v.ref)}
+                        className="font-mono text-[9px] tracking-[0.2em] text-[var(--whisper)]/30 hover:text-[var(--gold)] transition-colors duration-200 uppercase opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        aria-label="Copy verse"
+                      >
+                        [ copy ]
+                      </button>
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))}
             </div>
           </div>
         );
+      }
       // Must match menu item name exactly
       case 'THE LORDS PRAYER':
         return (
@@ -223,25 +354,8 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             </div>
           </div>
         );
-      case 'ARCHIVE':
-        return (
-          <div className="max-w-5xl mx-auto w-full px-4">
-            <h2 className="font-gothic text-[clamp(36px,6vw,80px)] text-[var(--bone)] mb-12 tracking-normal border-b border-[var(--whisper)]/20 pb-8 text-center drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]">Past Relics</h2>
-            <div className="flex flex-col gap-6">
-              {[
-                { year: 'MMXXIV', title: 'THE FALL', status: 'UNAVAILABLE' },
-                { year: 'MMXXIII', title: 'GENESIS', status: 'UNAVAILABLE' },
-                { year: 'MMXXII', title: 'PRE-EMPTIVE', status: 'RESTRICTED' }
-              ].map((item, i) => (
-                <div key={i} className="flex justify-between items-center py-6 border-b border-[var(--whisper)]/10 group cursor-pointer hover:border-[var(--bone)] transition-colors duration-500">
-                  <div className="font-sans text-[13px] md:text-[16px] text-[var(--faded)] tracking-[0.2em] w-24 md:w-32">{item.year}</div>
-                  <div className="font-bebas text-[clamp(24px,4vw,44px)] text-[var(--bone)] tracking-[0.05em] flex-1 opacity-50 group-hover:opacity-100 transition-opacity duration-500">{item.title}</div>
-                  <div className="font-sans text-[11px] md:text-[13px] text-[var(--blood)] tracking-[0.3em] font-bold">{item.status}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
+      default:
+        return null;
     }
   };
 
@@ -271,10 +385,10 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
               className="absolute inset-0 z-0 opacity-20 bg-cover bg-center mix-blend-overlay"
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
-            <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--abyss)] via-[var(--abyss)]/95 to-[var(--abyss)]/90 backdrop-blur-md" />
+            <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/95 to-[var(--void)]/80 backdrop-blur-3xl" />
 
             <div className="relative z-10 flex flex-col min-h-full">
-              <div className="flex flex-col gap-4 md:gap-6">
+              <div className="flex flex-col gap-4 md:gap-6 items-start">
                 {menuItems.map((item, i) => (
                   <motion.div
                     key={item}
@@ -283,18 +397,18 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                     exit={{ opacity: 0, x: 20 }}
                     transition={{ duration: 0.7, delay: 0.1 + i * 0.05, ease: 'easeOut' }}
                     onClick={() => handleMenuItemClick(item)}
-                    className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-50 active:opacity-100 hover:opacity-100 transition-all duration-300 uppercase pb-2 pointer-events-auto"
+                    className="group relative inline-block cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-50 active:opacity-100 hover:opacity-100 transition-all duration-300 uppercase pb-2 pointer-events-auto"
                   >
                     {item}
                     {item === 'PRAYER REQUEST' && (
-                      <span className="ml-3 font-sans text-[10px] text-[var(--blood)] tracking-[0.2em] align-middle">✝</span>
+                      <span className="ml-3 font-sans text-[10px] md:text-[14px] text-[var(--blood)] tracking-[0.2em] relative top-[-4px]">✝</span>
                     )}
                     <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                   </motion.div>
                 ))}
 
                 <motion.hr
-                  className="menu-divider"
+                  className="w-full border-[var(--whisper)]/20 my-2"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
                 />
 
@@ -307,7 +421,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                     setIsOpen(false);
                     setTimeout(() => setIsCheckoutOpen(true), 100);
                   }}
-                  className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-35 active:opacity-100 hover:opacity-100 transition-all duration-300 flex items-center justify-between pb-2 uppercase pointer-events-auto"
+                  className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-35 active:opacity-100 hover:opacity-100 transition-all duration-300 flex items-center justify-between pb-2 uppercase pointer-events-auto w-full"
                 >
                   CART
                   <span className="font-sans text-[14px] md:text-[16px] text-[var(--faded)] tracking-[0.1em] mt-2">({cartItems.length})</span>
@@ -316,11 +430,35 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
               </div>
 
               <motion.div
-                className="mt-auto pt-8 flex flex-col gap-2 font-sans text-[11px] tracking-[0.4em] text-[var(--whisper)] opacity-60 uppercase"
+                className="mt-auto pt-8 flex flex-col gap-4"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
               >
-                <span>9INETAILSS</span>
-                <span>EST. MMXXVI</span>
+                <div className="flex flex-col gap-1 font-mono text-[10px] tracking-[0.35em] text-[var(--whisper)]/50 uppercase">
+                  <span>9INETAILSS</span>
+                  <span>EST. MMXXVI</span>
+                </div>
+                {/* Social links */}
+                <div className="flex items-center gap-5">
+                  <a
+                    href="https://www.instagram.com/9inetailsss/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[10px] tracking-[0.25em] text-[var(--whisper)]/40 hover:text-[var(--bone)] transition-colors duration-300 uppercase"
+                    aria-label="Instagram"
+                  >
+                    INSTAGRAM
+                  </a>
+                  <div className="w-[1px] h-3 bg-[var(--whisper)]/20" />
+                  <a
+                    href="https://www.tiktok.com/@9inetailss"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[10px] tracking-[0.25em] text-[var(--whisper)]/40 hover:text-[var(--bone)] transition-colors duration-300 uppercase"
+                    aria-label="TikTok"
+                  >
+                    TIKTOK
+                  </a>
+                </div>
               </motion.div>
             </div>
           </motion.div>
