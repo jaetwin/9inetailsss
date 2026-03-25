@@ -3,11 +3,11 @@ import { motion } from 'motion/react';
 
 export default function Room3() {
   return (
-    <div className="w-full min-h-[220vh] flex flex-col justify-start items-center pointer-events-none pt-[20vh] relative z-10">
+    <div className="w-full min-h-[200vh] flex flex-col justify-start items-center pointer-events-none pt-[15vh] relative z-10">
+      
+      {/* ─── Hero Word ──────────────────────────────────────────────── */}
       <div className="max-w-[800px] text-center px-6 relative pointer-events-auto">
-        {/* Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-[var(--bone)] opacity-[0.03] blur-[100px] rounded-full pointer-events-none" />
-
         <motion.h2 
           className="font-sans text-[clamp(60px,12vw,160px)] text-glow leading-none tracking-[0.02em] text-[var(--bone)]"
           initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
@@ -32,70 +32,114 @@ export default function Room3() {
         </motion.div>
       </div>
 
-      <div className="w-[94%] max-w-[1400px] flex flex-col md:flex-row justify-between items-center md:items-start pointer-events-auto mt-[20vh] gap-12 px-[4vw]">
-        {/* Left Graphic */}
-        <motion.div 
-          className="w-full md:w-[40%] lg:w-[30%] h-[70vh] relative"
-          initial={{ opacity: 0, y: 50, rotate: -3 }}
-          whileInView={{ opacity: 1, y: 0, rotate: -3 }}
+      {/* ─── Brand Story + Craft Cards ─────────────────────────────── */}
+      <div className="w-[94%] max-w-[1300px] grid grid-cols-1 md:grid-cols-2 gap-8 mt-[18vh] px-[4vw] pointer-events-auto">
+
+        {/* Left — Who We Are */}
+        <motion.div
+          className="flex flex-col bg-[var(--void)] border border-[var(--whisper)]/20 p-10 md:p-14 relative"
+          initial={{ opacity: 0, x: -40 }}
+          whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="w-full h-full border-[1px] border-[var(--whisper)] p-2 glass-panel clip-diagonal group flex items-center justify-center overflow-hidden">
-            <div className="w-full h-full clip-diagonal bg-[var(--void)] flex items-center justify-center relative">
-              <div className="font-sans text-[clamp(100px,18vw,200px)] text-stroke opacity-30 group-hover:opacity-60 transition-opacity duration-1000 -rotate-90 select-none">
-                001
-              </div>
-              <div className="absolute bottom-10 left-8 font-sans text-[12px] tracking-[0.4em] text-[var(--faded)] rotate-90 origin-bottom-left uppercase">
-                ARCHIVE
-              </div>
+          {/* Blood accent bar */}
+          <div className="scripture-accent-bar" style={{ background: 'linear-gradient(90deg, var(--blood), rgba(107,20,20,0.4), transparent)' }} />
+          
+          <div className="font-mono text-[10px] tracking-[0.4em] text-[var(--faded)] uppercase mb-8">
+            Who We Are
+          </div>
+          
+          <h3 className="font-sans text-[clamp(28px,4vw,48px)] text-[var(--bone)] leading-[1.1] tracking-[0.02em] mb-8">
+            FAITH.<br/>
+            <span className="text-[var(--faded)]">WORN.</span>
+          </h3>
+          
+          <p className="font-serif text-[15px] md:text-[17px] text-[var(--parchment)]/80 leading-[1.9] mb-8">
+            9inetailss was born from a conviction that faith should be worn, not just felt.
+            Every piece carries the weight of scripture — built for those who walk differently, 
+            who endure what others won't, and who refuse to let belief stay invisible.
+          </p>
+          
+          <p className="font-serif text-[15px] md:text-[17px] text-[var(--parchment)]/80 leading-[1.9]">
+            This is not streetwear inspired by faith. This is faith expressed through craft. 
+            There is a difference. We honor it in every stitch.
+          </p>
+
+          <div className="mt-auto pt-10 flex items-center gap-4">
+            <div className="w-8 h-[1px] bg-[var(--whisper)]/30" />
+            <div className="font-mono text-[10px] tracking-[0.3em] text-[var(--faded)] uppercase">
+              Est. MMXXV · Georgia
             </div>
           </div>
         </motion.div>
-        
-        {/* Right Graphic */}
-        <motion.div 
-          className="w-full md:w-[45%] lg:w-[40%] h-[80vh] md:mt-[20vh] relative"
-          initial={{ opacity: 0, x: 50, rotate: 2 }}
-          whileInView={{ opacity: 1, x: 0, rotate: 2 }}
+
+        {/* Right — What We Make */}
+        <motion.div
+          className="flex flex-col bg-[var(--void)] border border-[var(--whisper)]/20 p-10 md:p-14 relative md:mt-16"
+          initial={{ opacity: 0, x: 40 }}
+          whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+          transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="absolute inset-0 bg-[var(--gold)] opacity-5 blur-[100px] pointer-events-none" />
-          <div className="w-full h-full border-[1px] border-[var(--whisper)] p-2 glass-panel clip-diagonal group flex items-center justify-center overflow-hidden">
-            <div className="w-full h-full clip-diagonal bg-gradient-to-tr from-[var(--void)] to-[var(--ash)] flex flex-col p-12 relative">
-              <div className="font-sans text-[14px] text-[var(--whisper)] tracking-[0.3em] mb-auto uppercase">CHAPTER I</div>
-              
-              <div className="font-bebas text-[clamp(40px,7vw,90px)] leading-[0.85] tracking-[0.05em] text-stroke-hover cursor-crosshair text-right mt-auto mb-10 select-none whitespace-nowrap">
-                SUFFER<br/>WELL
+          <div className="scripture-accent-bar" style={{ background: 'linear-gradient(90deg, var(--gold), rgba(180,140,60,0.3), transparent)' }} />
+
+          <div className="font-mono text-[10px] tracking-[0.4em] text-[var(--faded)] uppercase mb-8">
+            What We Make
+          </div>
+
+          <h3 className="font-sans text-[clamp(28px,4vw,48px)] text-[var(--bone)] leading-[1.1] tracking-[0.02em] mb-10">
+            THE<br/>
+            <span className="text-[var(--faded)]">STANDARD.</span>
+          </h3>
+
+          <div className="flex flex-col gap-8">
+            {[
+              {
+                num: '01',
+                title: 'Built Heavy',
+                body: 'Heavyweight construction across every piece. No fast fashion. No thin fabric. Built to last longer than the season it drops in.',
+              },
+              {
+                num: '02',
+                title: 'Scripture-Sourced',
+                body: 'Every graphic is rooted in Scripture — not trends, not aesthetics for aesthetics\' sake. The Word on your back should mean something.',
+              },
+              {
+                num: '03',
+                title: 'Always Limited',
+                body: 'We do not restock. Each drop is sealed. When it\'s gone, it\'s gone. You either carried it or you didn\'t.',
+              },
+            ].map(({ num, title, body }) => (
+              <div key={num} className="flex gap-6 group">
+                <div className="font-mono text-[11px] tracking-[0.2em] text-[var(--blood)] pt-1 shrink-0">{num}</div>
+                <div>
+                  <div className="font-sans text-[13px] tracking-[0.2em] text-[var(--bone)] uppercase mb-2 group-hover:text-[var(--gold)] transition-colors duration-300">{title}</div>
+                  <div className="font-serif text-[14px] md:text-[15px] text-[var(--parchment)]/70 leading-[1.8]">{body}</div>
+                </div>
               </div>
-              
-              <div className="w-full h-[1px] bg-[var(--whisper)]" />
-              <div className="flex justify-between items-center mt-6">
-                 <div className="w-3 h-3 bg-[var(--faded)] rounded-full animate-pulse" />
-                 <div className="font-sans text-[11px] tracking-[0.2em] text-[var(--bone)] uppercase">AESTHETIC DECAY</div>
-              </div>
-            </div>
+            ))}
           </div>
         </motion.div>
       </div>
 
-      <div className="w-full max-w-[900px] flex flex-col items-center mt-[30vh] px-6 pointer-events-auto">
-        <motion.div 
-          className="text-center bg-[var(--void)]/50 backdrop-blur-lg p-12 border border-[rgba(255,255,255,0.03)]"
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="font-serif font-light text-[clamp(24px,4vw,52px)] leading-[1.5] text-[var(--bone)]">
+      {/* ─── Bottom Scripture Anchor ────────────────────────────────── */}
+      <motion.div
+        className="w-full flex flex-col items-center mt-[20vh] px-6 pointer-events-auto"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 2, delay: 0.5 }}
+      >
+        <div className="text-center bg-[var(--void)]/50 backdrop-blur-lg p-12 border border-[rgba(255,255,255,0.03)] max-w-[900px]">
+          <div className="font-serif font-light text-[clamp(20px,3.5vw,44px)] leading-[1.6] text-[var(--bone)]">
             "And let us not grow weary of doing good, for in due season we will reap, if we do not give up."
           </div>
           <div className="font-sans text-[13px] text-[var(--faded)] tracking-[0.3em] mt-10 uppercase">
             — Galatians 6:9
           </div>
-        </motion.div>
-      </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

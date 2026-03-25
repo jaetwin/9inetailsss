@@ -45,6 +45,7 @@ export default function Room4() {
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
+            <div className="scripture-accent-bar" style={{ background: 'linear-gradient(90deg, var(--blood), rgba(107,20,20,0.8), transparent)' }} />
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--blood)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             
             <div className="flex-1 flex flex-col justify-start relative z-10">
@@ -63,12 +64,13 @@ export default function Room4() {
           </motion.blockquote>
 
           <motion.blockquote 
-            className="glass-panel clip-diagonal p-12 flex flex-col justify-between min-h-[380px] border border-[var(--whisper)] group hover:-translate-y-4 transition-transform duration-500 relative overflow-hidden mt-0 md:mt-16"
+            className="glass-panel clip-diagonal p-12 flex flex-col justify-between min-h-[380px] border border-[var(--whisper)] group hover:-translate-y-4 transition-transform duration-500 relative overflow-hidden mt-0 md:mt-24"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.8, delay: 0.15, ease: "easeOut" }}
           >
+            <div className="scripture-accent-bar" style={{ background: 'linear-gradient(90deg, var(--gold), rgba(180,140,60,0.5), transparent)' }} />
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--gold)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             
             <div className="flex-1 flex flex-col justify-start relative z-10">
@@ -87,12 +89,13 @@ export default function Room4() {
           </motion.blockquote>
 
           <motion.blockquote 
-            className="glass-panel clip-diagonal p-12 flex flex-col justify-between min-h-[380px] border border-[var(--whisper)] group hover:-translate-y-4 transition-transform duration-500 relative overflow-hidden mt-0 md:-mt-8"
+            className="glass-panel clip-diagonal p-12 flex flex-col justify-between min-h-[380px] border border-[var(--whisper)] group hover:-translate-y-4 transition-transform duration-500 relative overflow-hidden mt-0 md:mt-8"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
           >
+            <div className="scripture-accent-bar" style={{ background: 'linear-gradient(90deg, rgba(232,226,214,0.5), rgba(232,226,214,0.1), transparent)' }} />
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--bone)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
             
             <div className="flex-1 flex flex-col justify-start relative z-10">
