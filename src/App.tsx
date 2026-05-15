@@ -16,7 +16,7 @@ import { CartProvider } from './CartContext';
 import Checkout from './components/Checkout';
 import EmailSignup from './components/EmailSignup';
 import { ToastProvider } from './components/Toast';
-import MaintenancePage from './components/MaintenancePage';
+import MaintenancePage from './MaintenancePage';
 
 // Error Boundary Interface
 interface ErrorBoundaryProps { children: React.ReactNode; fallback: React.ReactNode; }
