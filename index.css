@@ -39,3 +39,8 @@ body {
 .font-garamond   { font-family: 'Cormorant Garamond', serif; }
 .font-bebas      { font-family: 'Bebas Neue', sans-serif; }
 .font-mono-ibm   { font-family: 'IBM Plex Mono', monospace; }
+
+#ps-desktop-widget__closed-body {
+  left: auto !important;
+  right: 20px !important;
+}
