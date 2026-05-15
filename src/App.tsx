@@ -51,6 +51,21 @@ export default function App() {
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+  const moveWidget = () => {
+    const iframe = document.querySelector('iframe[title="Marketing Popup"]') as HTMLElement;
+    if (iframe) {
+      iframe.style.left = 'auto';
+      iframe.style.right = '0px';
+      iframe.style.inset = 'auto 0px 0px auto';
+    }
+  };
+
+  // Poll until the iframe appears
+  const interval = setInterval(moveWidget, 500);
+  return () => clearInterval(interval);
+}, []);
+
   const toggleMute = () => {
     const nextMuteState = !isMuted;
     setIsMuted(nextMuteState);
