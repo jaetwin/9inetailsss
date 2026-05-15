@@ -62,7 +62,7 @@ export default function App() {
   };
 
   // Poll until the iframe appears
-  const interval = setInterval(moveWidget, 500);
+  const interval = setInterval(moveWidget, 10);
   return () => clearInterval(interval);
 }, []);
 
