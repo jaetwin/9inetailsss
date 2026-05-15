@@ -72,13 +72,15 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
     onPlayMusic();
     setIsOpen(true);
 
-    // Open Postscript SMS popup
-    if (window.postscript) {
-      window.postscript.popups.open(833871, {
-        activePopupBehavior: 'ALWAYS_DISMISS',
-        respectPopupStatus: true
-      });
-    }
+    // Open Postscript SMS popup after 3 seconds
+    setTimeout(() => {
+      if (window.postscript) {
+        window.postscript.popups.open(833871, {
+          activePopupBehavior: 'ALWAYS_DISMISS',
+          respectPopupStatus: true
+        });
+      }
+    }, 3000);
 
     setTimeout(() => {
       onEnter();
