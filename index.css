@@ -40,7 +40,13 @@ body {
 .font-bebas      { font-family: 'Bebas Neue', sans-serif; }
 .font-mono-ibm   { font-family: 'IBM Plex Mono', monospace; }
 
-#ps-desktop-widget__closed-body {
+
+#ps_widget_container {
   left: auto !important;
-  right: 20px !important;
+  right: 0 !important;
+}
+iframe[title="Marketing Popup"] {
+  left: auto !important;
+  right: 0 !important;
+  inset: auto 0px 0px auto !important;
 }
