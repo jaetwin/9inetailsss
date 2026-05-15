@@ -52,6 +52,16 @@ function getDailyVerse() {
   return VERSES[dayOfYear % VERSES.length];
 }
 
+declare global {
+  interface Window {
+    postscript?: {
+      popups: {
+        open: (id: number, options?: object) => void;
+      };
+    };
+  }
+}
+
 export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: Room1Props) {
   const [isOpen, setIsOpen] = useState(false);
   const { progress, active } = useProgress();
@@ -61,6 +71,15 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
     if (isOpen) return;
     onPlayMusic();
     setIsOpen(true);
+
+    // Open Postscript SMS popup
+    if (window.postscript) {
+      window.postscript.popups.open(833871, {
+        activePopupBehavior: 'ALWAYS_DISMISS',
+        respectPopupStatus: true
+      });
+    }
+
     setTimeout(() => {
       onEnter();
     }, 1800);
