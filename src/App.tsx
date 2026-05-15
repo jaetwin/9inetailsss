@@ -16,6 +16,7 @@ import { CartProvider } from './CartContext';
 import Checkout from './components/Checkout';
 import EmailSignup from './components/EmailSignup';
 import { ToastProvider } from './components/Toast';
+import MaintenancePage from './components/MaintenancePage';
 
 // Error Boundary Interface
 interface ErrorBoundaryProps { children: React.ReactNode; fallback: React.ReactNode; }
@@ -34,10 +35,13 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 // Detect mobile once at module level
 const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
+const isMaintenanceMode = import.meta.env.VITE_MAINTENANCE === 'true';
+
 export default function App() {
   const [showRoom2, setShowRoom2] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(!isMaintenanceMode);
   
   const [isMuted, setIsMuted] = useState(() => {
     return localStorage.getItem('muted') === 'true';
@@ -52,19 +56,18 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-  const moveWidget = () => {
-    const iframe = document.querySelector('iframe[title="Marketing Popup"]') as HTMLElement;
-    if (iframe) {
-      iframe.style.left = 'auto';
-      iframe.style.right = '0px';
-      iframe.style.inset = 'auto 0px 0px auto';
-    }
-  };
+    const moveWidget = () => {
+      const iframe = document.querySelector('iframe[title="Marketing Popup"]') as HTMLElement;
+      if (iframe) {
+        iframe.style.left = 'auto';
+        iframe.style.right = '0px';
+        iframe.style.inset = 'auto 0px 0px auto';
+      }
+    };
 
-  // Poll until the iframe appears
-  const interval = setInterval(moveWidget, 10);
-  return () => clearInterval(interval);
-}, []);
+    const interval = setInterval(moveWidget, 10);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleMute = () => {
     const nextMuteState = !isMuted;
@@ -82,6 +85,11 @@ export default function App() {
       audioRef.current.play().catch(err => console.log("Audio play blocked:", err));
     }
   };
+
+  // Show maintenance page if in maintenance mode and not unlocked
+  if (isMaintenanceMode && !isUnlocked) {
+    return <MaintenancePage onUnlock={() => setIsUnlocked(true)} />;
+  }
 
   return (
     <ToastProvider>
@@ -127,9 +135,7 @@ export default function App() {
             <ErrorBoundary fallback={<div className="p-8 text-[var(--blood)]">Failed to load 3D application.</div>}>
               <Canvas
                 camera={{ position: [0, 0, 14], fov: 45 }}
-                // Disable shadows on mobile — major performance win
                 shadows={!isMobile}
-                // Lower pixel ratio on mobile so GPU renders fewer pixels
                 gl={{
                   antialias: !isMobile,
                   powerPreference: isMobile ? 'low-power' : 'high-performance',
@@ -139,7 +145,6 @@ export default function App() {
                 <ambientLight intensity={0.10} color="#ffffff" />
                 <ScrollControls
                   pages={9.5}
-                  // Snappier damping on mobile
                   damping={isMobile ? 0.3 : 0.15}
                   distance={1.2}
                   enabled={showRoom2}
