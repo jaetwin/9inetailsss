@@ -182,7 +182,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
       case 'THE ARCHITECTS': {
         const architects = [
           {
-            name: 'Jeatwin',
+            name: 'Jaetwin',
             role: 'Founder',
             instagram: 'jaetwin330',
             avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-3.cdninstagram.com/v/t51.82787-19/640442060_17875859934510598_6095791827661713176_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gFlfOx_hCxiymVLM67G99Hx9AOKms0FUh_FlNy83V44Va0pV3Y3hwMn2rBBVkoobzmb1WtIMgosp9c8-1jEFTwT&_nc_ohc=xglI2TxQO-gQ7kNvwGf6h0W&_nc_gid=PAU8YwKpWcGFzlp-BeMc2g&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Afx8C9vHtX_ylIC5Q2jJe5Vt74STPyns_n0B-kYsvAxwGw&oe=69CA2932&_nc_sid=8b3546'),
