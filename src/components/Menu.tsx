@@ -432,13 +432,13 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             exit={{ opacity: 0, filter: 'blur(20px)', scale: 0.95 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Background image */}
+            {/* Solid base to block 3D scene */}
+            <div className="fixed inset-0 z-0 bg-[var(--void)]" />
+            {/* Background image on top */}
             <div
-              className="fixed inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
+              className="fixed inset-0 z-[1] opacity-20 bg-cover bg-center mix-blend-overlay"
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
-            {/* Full covering dark overlay — fixed so it covers while scrolling */}
-            <div className="fixed inset-0 z-0 bg-[var(--void)] backdrop-blur-xl" />
 
             <div className="relative z-20 flex justify-start w-full mb-8 flex-shrink-0">
               <div
