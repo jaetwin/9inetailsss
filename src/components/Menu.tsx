@@ -25,7 +25,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
     });
   }, []);
 
-  // ESC key and Cinematic UI trigger
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -33,16 +32,12 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
       if (isOpen) { setIsOpen(false); }
     };
     window.addEventListener('keydown', handler);
-    
     if (isOpen) {
       document.body.classList.add('overlay-open');
     } else {
       document.body.classList.remove('overlay-open');
     }
-    
-    return () => {
-      window.removeEventListener('keydown', handler);
-    };
+    return () => { window.removeEventListener('keydown', handler); };
   }, [isOpen, overlayMessage]);
 
   const copyVerse = useCallback(async (text: string, ref: string) => {
@@ -208,7 +203,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
               </h2>
               <div className="w-16 h-[1px] bg-[var(--whisper)]/40 mx-auto mt-8" />
             </div>
-
             <div className="flex flex-col md:flex-row gap-10 md:gap-6 justify-center items-center md:items-start">
               {architects.map((a, i) => (
                 <motion.div
@@ -232,9 +226,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                           src={a.avatar}
                           alt={a.name}
                           className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.display = 'none';
-                          }}
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                         />
                       </div>
                     </div>
@@ -242,14 +234,9 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                       <span className="font-mono text-[9px] text-[var(--gold)]">IG</span>
                     </div>
                   </a>
-
                   <div className="flex flex-col items-center gap-2">
-                    <div className="font-sans text-[clamp(20px,3vw,28px)] text-[var(--bone)] tracking-[0.08em] leading-none uppercase">
-                      {a.name}
-                    </div>
-                    <div className="font-mono text-[10px] tracking-[0.25em] text-[var(--faded)] uppercase">
-                      {a.role}
-                    </div>
+                    <div className="font-sans text-[clamp(20px,3vw,28px)] text-[var(--bone)] tracking-[0.08em] leading-none uppercase">{a.name}</div>
+                    <div className="font-mono text-[10px] tracking-[0.25em] text-[var(--faded)] uppercase">{a.role}</div>
                     <div className="w-4 h-[1px] bg-[var(--whisper)]/30" />
                     <a
                       href={`https://www.instagram.com/${a.instagram}/`}
@@ -263,7 +250,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                 </motion.div>
               ))}
             </div>
-
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 1 }}
               className="mt-16 flex flex-col items-center gap-3"
@@ -293,9 +279,17 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                 <React.Fragment key={i}>
                   {i > 0 && <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />}
                   <div className="flex flex-col items-center group">
-                    <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">&quot;{v.text}&quot;</motion.p>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8 }}
+                      className="italic drop-shadow-[0_2px_8px_rgba(0,0,0,1)]"
+                    >
+                      &quot;{v.text}&quot;
+                    </motion.p>
                     <div className="flex items-center gap-4 mt-4">
-                      <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase font-sans not-italic">– {v.ref}</p>
+                      <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase font-sans not-italic drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">– {v.ref}</p>
                       <button
                         onClick={() => copyVerse(`"${v.text}"`, v.ref)}
                         className="font-mono text-[9px] tracking-[0.2em] text-[var(--whisper)]/30 hover:text-[var(--gold)] transition-colors duration-200 uppercase opacity-0 group-hover:opacity-100 focus:opacity-100"
@@ -311,6 +305,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
           </div>
         );
       }
+
       case 'THE LORDS PRAYER':
         return (
           <div className="max-w-4xl mx-auto text-center flex flex-col items-center justify-center min-h-[50vh] px-4">
@@ -373,7 +368,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/95 to-[var(--void)]/80 backdrop-blur-3xl" />
-
             <div className="relative z-10 flex flex-col min-h-full">
               <div className="flex flex-col gap-4 md:gap-6 items-start">
                 {menuItems.map((item, i) => (
@@ -393,21 +387,16 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                     <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                   </motion.div>
                 ))}
-
                 <motion.hr
                   className="w-full border-[var(--whisper)]/20 my-2"
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
                 />
-
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
-                  onClick={() => {
-                    setIsOpen(false);
-                    setTimeout(() => setIsCheckoutOpen(true), 100);
-                  }}
+                  onClick={() => { setIsOpen(false); setTimeout(() => setIsCheckoutOpen(true), 100); }}
                   className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-35 active:opacity-100 hover:opacity-100 transition-all duration-300 flex items-center justify-between pb-2 uppercase pointer-events-auto w-full"
                 >
                   CART
@@ -415,7 +404,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                 </motion.div>
               </div>
-
               <motion.div
                 className="mt-auto pt-8 flex flex-col gap-4"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
@@ -425,25 +413,9 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   <span>EST. MMXXVI</span>
                 </div>
                 <div className="flex items-center gap-5">
-                  <a
-                    href="https://www.instagram.com/9inetailsss/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-[10px] tracking-[0.25em] text-[var(--whisper)]/40 hover:text-[var(--bone)] transition-colors duration-300 uppercase"
-                    aria-label="Instagram"
-                  >
-                    INSTAGRAM
-                  </a>
+                  <a href="https://www.instagram.com/9inetailsss/" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] tracking-[0.25em] text-[var(--whisper)]/40 hover:text-[var(--bone)] transition-colors duration-300 uppercase" aria-label="Instagram">INSTAGRAM</a>
                   <div className="w-[1px] h-3 bg-[var(--whisper)]/20" />
-                  <a
-                    href="https://www.tiktok.com/@9inetailss"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-[10px] tracking-[0.25em] text-[var(--whisper)]/40 hover:text-[var(--bone)] transition-colors duration-300 uppercase"
-                    aria-label="TikTok"
-                  >
-                    TIKTOK
-                  </a>
+                  <a href="https://www.tiktok.com/@9inetailss" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] tracking-[0.25em] text-[var(--whisper)]/40 hover:text-[var(--bone)] transition-colors duration-300 uppercase" aria-label="TikTok">TIKTOK</a>
                 </div>
               </motion.div>
             </div>
@@ -460,11 +432,13 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             exit={{ opacity: 0, filter: 'blur(20px)', scale: 0.95 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
+            {/* Background image */}
             <div
-              className="absolute inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
+              className="fixed inset-0 z-0 opacity-40 bg-cover bg-center mix-blend-overlay"
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
-            <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/90 to-[var(--void)]/80 backdrop-blur-xl" />
+            {/* Full covering dark overlay — fixed so it covers while scrolling */}
+            <div className="fixed inset-0 z-0 bg-[var(--void)]/90 backdrop-blur-xl" />
 
             <div className="relative z-20 flex justify-start w-full mb-8 flex-shrink-0">
               <div
