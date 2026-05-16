@@ -438,7 +438,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
               style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
             />
             {/* Full covering dark overlay — fixed so it covers while scrolling */}
-            <div className="fixed inset-0 z-0 bg-[var(--void)]/90 backdrop-blur-xl" />
+   <div className="fixed inset-0 z-0 bg-[var(--void)] backdrop-blur-xl" />
 
             <div className="relative z-20 flex justify-start w-full mb-8 flex-shrink-0">
               <div
