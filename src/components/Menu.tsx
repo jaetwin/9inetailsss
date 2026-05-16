@@ -27,7 +27,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
 
   // ESC key and Cinematic UI trigger
   useEffect(() => {
-    // Esc handler
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       if (overlayMessage) { setOverlayMessage(null); return; }
@@ -35,7 +34,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
     };
     window.addEventListener('keydown', handler);
     
-    // Cinematic 3D depth push
     if (isOpen) {
       document.body.classList.add('overlay-open');
     } else {
@@ -47,7 +45,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
     };
   }, [isOpen, overlayMessage]);
 
-  // Copy verse to clipboard
   const copyVerse = useCallback(async (text: string, ref: string) => {
     try {
       await navigator.clipboard.writeText(`${text} — ${ref}`);
@@ -57,7 +54,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
     }
   }, [toast]);
 
-  // These names MUST match the switch cases and click handler below exactly
   const menuItems = [
     'COLLECTION',
     'SCRIPTURE',
@@ -84,7 +80,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
 
   useEffect(() => {
     let interval: any;
-    // Must match the menu item name exactly
     if (overlayMessage === 'THE LORDS PRAYER') {
       interval = setInterval(() => {
         setActivePrayerIndex((prev) => (prev + 1) % prayers.length);
@@ -94,7 +89,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
   }, [overlayMessage, prayers.length]);
 
   const handleMenuItemClick = (item: string) => {
-    // Must match the menu item name exactly
     if (item === 'PRAYER REQUEST') {
       setIsOpen(false);
       setTimeout(() => setPrayerRequestOpen(true), 400);
@@ -185,21 +179,21 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             name: 'Jaetwin',
             role: 'Founder',
             instagram: 'jaetwin330',
-            avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-3.cdninstagram.com/v/t51.82787-19/640442060_17875859934510598_6095791827661713176_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=110&_nc_oc=Q6cZ2gFlfOx_hCxiymVLM67G99Hx9AOKms0FUh_FlNy83V44Va0pV3Y3hwMn2rBBVkoobzmb1WtIMgosp9c8-1jEFTwT&_nc_ohc=xglI2TxQO-gQ7kNvwGf6h0W&_nc_gid=PAU8YwKpWcGFzlp-BeMc2g&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_Afx8C9vHtX_ylIC5Q2jJe5Vt74STPyns_n0B-kYsvAxwGw&oe=69CA2932&_nc_sid=8b3546'),
+            avatar: '/architects/jaetwin.jpg',
             verse: 'Proverbs 16:3',
           },
           {
             name: 'Sh0kr / Germanized',
             role: 'Co-Founder · Web Architect',
             instagram: 'purelybasedgod',
-            avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-3.cdninstagram.com/v/t51.82787-19/601409654_17877386079446435_7677971554891352608_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDI0LmMyIn0&_nc_ht=scontent-atl3-3.cdninstagram.com&_nc_cat=111&_nc_oc=Q6cZ2gHV3uqxsW8qjECD2PTcIurW8P44RfGS1bKcp2xIUO5Q8mkUfQtBOzv3I5pVoAezd43DQXuocudN4Ptj_INtUOqz&_nc_ohc=jIj4ttT8G_gQ7kNvwHUepwY&_nc_gid=VNeg1-fCFiCuiiAXEtEG7w&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfyRE2XlmgjhuicICiaZNd_N9sJAVeExFJyHuoIPCIEijw&oe=69CA0CF1&_nc_sid=8b3546'),
+            avatar: '/architects/shokr.jpg',
             verse: 'Colossians 3:23',
           },
           {
             name: 'Jwill',
             role: 'Co-Founder',
             instagram: '5jwill5',
-            avatar: 'https://wsrv.nl/?url=' + encodeURIComponent('https://scontent-atl3-1.cdninstagram.com/v/t51.82787-19/639749884_17855816937621495_7666930371352852784_n.jpg?stp=dst-jpg_s320x320_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=scontent-atl3-1.cdninstagram.com&_nc_cat=103&_nc_oc=Q6cZ2gH0yAjjfH9IegMWD0e1r4YiRDnLw4ESaKVm6Nq4a6BaOHb8f7cKMnSUTX58VvFvtAEMYbJbxKmAFaKjF7Re2B9c&_nc_ohc=rn4h0m3tCL0Q7kNvwEXIwHN&_nc_gid=cful5A3HJaKfvNzmxSqNtw&edm=AOQ1c0wBAAAA&ccb=7-5&oh=00_AfyZDSeeQcY-4OCXnBebbGPqGekBBMkmep9y9QQFKP9lPQ&oe=69CA0375&_nc_sid=8b3546'),
+            avatar: '/architects/jwill.jpg',
             verse: 'Romans 8:28',
           },
         ];
@@ -224,7 +218,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   transition={{ duration: 0.7, delay: 0.1 + i * 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="flex flex-col items-center gap-5 group w-full md:w-[280px]"
                 >
-                  {/* Avatar */}
                   <a
                     href={`https://www.instagram.com/${a.instagram}/`}
                     target="_blank"
@@ -232,9 +225,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                     className="relative block"
                     aria-label={`${a.name} on Instagram`}
                   >
-                    {/* Outer glow ring */}
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--bone)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110" />
-                    {/* Border ring */}
                     <div className="relative w-[140px] h-[140px] rounded-full p-[2px] bg-gradient-to-br from-[var(--whisper)]/60 via-[var(--bone)]/10 to-[var(--whisper)]/20 group-hover:from-[var(--bone)]/80 group-hover:via-[var(--gold)]/30 transition-all duration-700">
                       <div className="w-full h-full rounded-full overflow-hidden bg-[var(--ash)]">
                         <img
@@ -247,13 +238,11 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                         />
                       </div>
                     </div>
-                    {/* Instagram icon overlay */}
                     <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[var(--void)] border border-[var(--whisper)]/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <span className="font-mono text-[9px] text-[var(--gold)]">IG</span>
                     </div>
                   </a>
 
-                  {/* Info */}
                   <div className="flex flex-col items-center gap-2">
                     <div className="font-sans text-[clamp(20px,3vw,28px)] text-[var(--bone)] tracking-[0.08em] leading-none uppercase">
                       {a.name}
@@ -275,7 +264,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
               ))}
             </div>
 
-            {/* Footer verse */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 1 }}
               className="mt-16 flex flex-col items-center gap-3"
@@ -323,7 +311,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
           </div>
         );
       }
-      // Must match menu item name exactly
       case 'THE LORDS PRAYER':
         return (
           <div className="max-w-4xl mx-auto text-center flex flex-col items-center justify-center min-h-[50vh] px-4">
@@ -437,7 +424,6 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   <span>9INETAILSS</span>
                   <span>EST. MMXXVI</span>
                 </div>
-                {/* Social links */}
                 <div className="flex items-center gap-5">
                   <a
                     href="https://www.instagram.com/9inetailsss/"
