@@ -88,7 +88,12 @@ export default function App() {
 
   // Show maintenance page if in maintenance mode and not unlocked
   if (isMaintenanceMode && !isUnlocked) {
-    return <MaintenancePage onUnlock={() => setIsUnlocked(true)} />;
+    return (
+      <>
+        <Cursor />
+        <MaintenancePage onUnlock={() => setIsUnlocked(true)} />
+      </>
+    );
   }
 
   return (
