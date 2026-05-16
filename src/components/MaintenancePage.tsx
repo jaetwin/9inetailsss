@@ -51,8 +51,9 @@ export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) 
         style={{ backgroundImage: 'url(/grain.png)', backgroundRepeat: 'repeat' }} />
 
       {/* Gothic Church Windows SVG Background */}
-      <div className="fixed inset-0 pointer-events-none z-0 flex items-end justify-center opacity-[0.06]">
-        <svg width="100%" viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+      <div className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center opacity-[0.08]">
+        <div style={{ width: '600px', maxWidth: '90vw' }}>
+        <svg width="100%" viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
           <style>{`
             .tracery { fill: none; stroke: #ffeedd; stroke-width: 1.2; }
             .tracery-bold { fill: none; stroke: #ffeedd; stroke-width: 2; }
@@ -123,6 +124,7 @@ export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) 
           <circle cx="475" cy="270" r="16" className="tracery"/>
           <circle cx="545" cy="270" r="16" className="tracery"/>
         </svg>
+        </div>
       </div>
 
       {/* Vignette */}
