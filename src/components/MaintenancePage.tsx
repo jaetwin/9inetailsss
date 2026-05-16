@@ -44,11 +44,86 @@ export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) 
   };
 
   return (
-    <div className="fixed inset-0 w-full h-screen bg-[var(--void)] flex flex-col items-center justify-center z-[99999] overflow-hidden cursor-none">
+    <div className="fixed inset-0 w-full h-screen bg-[var(--void)] flex flex-col items-center justify-center z-[99999] overflow-hidden">
 
       {/* Grain overlay */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{ backgroundImage: 'url(/grain.png)', backgroundRepeat: 'repeat' }} />
+
+      {/* Gothic Church Windows SVG Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 flex items-end justify-center opacity-[0.06]">
+        <svg width="100%" viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax meet">
+          <style>{`
+            .tracery { fill: none; stroke: #ffeedd; stroke-width: 1.2; }
+            .tracery-bold { fill: none; stroke: #ffeedd; stroke-width: 2; }
+            .pane { fill: #ffeedd; opacity: 0.08; }
+          `}</style>
+          {/* LEFT WINDOW */}
+          <path d="M90,480 L90,200 Q90,110 170,110 Q250,110 250,200 L250,480 Z" className="tracery-bold"/>
+          <line x1="170" y1="480" y2="300" x2="170" className="tracery"/>
+          <path d="M100,480 L100,230 Q100,160 135,160 Q170,160 170,230 L170,480" className="tracery"/>
+          <path d="M100,350 L100,230 Q100,160 135,160 Q170,160 170,230 L170,350 Z" className="pane"/>
+          <path d="M170,480 L170,230 Q170,160 205,160 Q240,160 240,230 L240,480" className="tracery"/>
+          <path d="M170,350 L170,230 Q170,160 205,160 Q240,160 240,350 Z" className="pane"/>
+          <circle cx="170" cy="155" r="28" className="tracery"/>
+          <circle cx="170" cy="155" r="14" className="pane"/>
+          <circle cx="170" cy="155" r="6" className="tracery"/>
+          <line x1="143" y1="155" x2="197" y2="155" className="tracery"/>
+          <line x1="170" y1="128" x2="170" y2="182" className="tracery"/>
+          <line x1="150" y1="135" x2="190" y2="175" className="tracery"/>
+          <line x1="190" y1="135" x2="150" y2="175" className="tracery"/>
+          <line x1="100" y1="350" x2="240" y2="350" className="tracery"/>
+          <circle cx="135" cy="270" r="16" className="tracery"/>
+          <circle cx="205" cy="270" r="16" className="tracery"/>
+
+          {/* CENTER WINDOW */}
+          <path d="M255,480 L255,170 Q255,60 340,60 Q425,60 425,170 L425,480 Z" className="tracery-bold"/>
+          <line x1="305" y1="480" y2="310" x2="305" className="tracery"/>
+          <line x1="340" y1="480" y2="280" x2="340" className="tracery"/>
+          <line x1="375" y1="480" y2="310" x2="375" className="tracery"/>
+          <path d="M265,480 L265,220 Q265,145 285,130 Q305,115 305,190 L305,480" className="tracery"/>
+          <path d="M265,340 L265,220 Q265,145 285,130 Q305,115 305,190 L305,340 Z" className="pane"/>
+          <path d="M305,480 L305,190 Q305,110 340,100 Q375,110 375,190 L375,480" className="tracery"/>
+          <path d="M305,310 L305,190 Q305,110 340,100 Q375,110 375,190 L375,310 Z" className="pane"/>
+          <path d="M375,480 L375,190 Q375,115 395,130 Q415,145 415,220 L415,480" className="tracery"/>
+          <path d="M375,340 L375,190 Q375,115 395,130 Q415,145 415,340 Z" className="pane"/>
+          <circle cx="340" cy="110" r="42" className="tracery-bold"/>
+          <circle cx="340" cy="110" r="28" className="pane"/>
+          <circle cx="340" cy="110" r="14" className="tracery"/>
+          <circle cx="340" cy="110" r="5" className="tracery"/>
+          <circle cx="340" cy="82" r="10" className="tracery"/>
+          <circle cx="340" cy="138" r="10" className="tracery"/>
+          <circle cx="312" cy="110" r="10" className="tracery"/>
+          <circle cx="368" cy="110" r="10" className="tracery"/>
+          <circle cx="321" cy="91" r="10" className="tracery"/>
+          <circle cx="359" cy="91" r="10" className="tracery"/>
+          <circle cx="321" cy="129" r="10" className="tracery"/>
+          <circle cx="359" cy="129" r="10" className="tracery"/>
+          <line x1="265" y1="340" x2="415" y2="340" className="tracery"/>
+          <line x1="265" y1="310" x2="415" y2="310" className="tracery"/>
+          <circle cx="285" cy="255" r="14" className="tracery"/>
+          <circle cx="340" cy="235" r="14" className="tracery"/>
+          <circle cx="395" cy="255" r="14" className="tracery"/>
+
+          {/* RIGHT WINDOW */}
+          <path d="M430,480 L430,200 Q430,110 510,110 Q590,110 590,200 L590,480 Z" className="tracery-bold"/>
+          <line x1="510" y1="480" y2="300" x2="510" className="tracery"/>
+          <path d="M440,480 L440,230 Q440,160 475,160 Q510,160 510,230 L510,480" className="tracery"/>
+          <path d="M440,350 L440,230 Q440,160 475,160 Q510,160 510,230 L510,350 Z" className="pane"/>
+          <path d="M510,480 L510,230 Q510,160 545,160 Q580,160 580,230 L580,480" className="tracery"/>
+          <path d="M510,350 L510,230 Q510,160 545,160 Q580,160 545,230 L510,350 Z" className="pane"/>
+          <circle cx="510" cy="155" r="28" className="tracery"/>
+          <circle cx="510" cy="155" r="14" className="pane"/>
+          <circle cx="510" cy="155" r="6" className="tracery"/>
+          <line x1="483" y1="155" x2="537" y2="155" className="tracery"/>
+          <line x1="510" y1="128" x2="510" y2="182" className="tracery"/>
+          <line x1="490" y1="135" x2="530" y2="175" className="tracery"/>
+          <line x1="530" y1="135" x2="490" y2="175" className="tracery"/>
+          <line x1="440" y1="350" x2="580" y2="350" className="tracery"/>
+          <circle cx="475" cy="270" r="16" className="tracery"/>
+          <circle cx="545" cy="270" r="16" className="tracery"/>
+        </svg>
+      </div>
 
       {/* Vignette */}
       <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_center,_transparent_40%,_var(--void)_120%)] opacity-80" />
