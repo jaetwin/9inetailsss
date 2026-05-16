@@ -44,7 +44,7 @@ export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) 
   };
 
   return (
-    <div className="fixed inset-0 w-full h-screen bg-[var(--void)] flex flex-col items-center justify-center z-[99999] overflow-hidden">
+    <div className="fixed inset-0 w-full h-screen bg-[var(--void)] flex flex-col items-center justify-center z-[99999] overflow-hidden cursor-none">
 
       {/* Grain overlay */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-40"
