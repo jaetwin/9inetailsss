@@ -5,7 +5,7 @@ import { useCart } from '../CartContext';
 import PrayerRequest from './PrayerRequest';
 import { fetchProducts } from '../lib/shopify';
 
-export default function Menu({ onProductClick }: { onProductClick?: (product: any) => void }) {
+export default function Menu({ onProductClick, onOverlayChange }: { onProductClick?: (product: any) => void; onOverlayChange?: (open: boolean) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [overlayMessage, setOverlayMessage] = useState<string | null>(null);
   const [prayerRequestOpen, setPrayerRequestOpen] = useState(false);
@@ -24,6 +24,11 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
       if (rekoe) setRekoeProduct(rekoe);
     });
   }, []);
+
+  // Notify parent when overlay opens/closes
+  useEffect(() => {
+    onOverlayChange?.(!!overlayMessage);
+  }, [overlayMessage, onOverlayChange]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -157,6 +162,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             })}
           </div>
         );
+
       case 'MISSION':
         return (
           <div className="max-w-4xl mx-auto text-center px-4">
@@ -168,39 +174,18 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             </div>
           </div>
         );
+
       case 'THE ARCHITECTS': {
         const architects = [
-          {
-            name: 'Jaetwin',
-            role: 'Founder',
-            instagram: 'jaetwin330',
-            avatar: '/architects/jaetwin.jpg',
-            verse: 'Proverbs 16:3',
-          },
-          {
-            name: 'Sh0kr / Germanized',
-            role: 'Co-Founder · Web Architect',
-            instagram: 'purelybasedgod',
-            avatar: '/architects/shokr.jpg',
-            verse: 'Colossians 3:23',
-          },
-          {
-            name: 'Jwill',
-            role: 'Co-Founder',
-            instagram: '5jwill5',
-            avatar: '/architects/jwill.jpg',
-            verse: 'Romans 8:28',
-          },
+          { name: 'Jaetwin', role: 'Founder', instagram: 'jaetwin330', avatar: '/architects/jaetwin.jpg', verse: 'Proverbs 16:3' },
+          { name: 'Sh0kr / Germanized', role: 'Co-Founder · Web Architect', instagram: 'purelybasedgod', avatar: '/architects/shokr.jpg', verse: 'Colossians 3:23' },
+          { name: 'Jwill', role: 'Co-Founder', instagram: '5jwill5', avatar: '/architects/jwill.jpg', verse: 'Romans 8:28' },
         ];
         return (
           <div className="max-w-5xl mx-auto text-center px-4 py-4">
             <div className="mb-12">
-              <div className="font-mono text-[10px] tracking-[0.4em] text-[var(--gold)] uppercase mb-4">
-                Those who build for the reborn
-              </div>
-              <h2 className="font-sans text-[clamp(36px,7vw,90px)] text-[var(--bone)] tracking-[0.05em] leading-none">
-                THE ARCHITECTS
-              </h2>
+              <div className="font-mono text-[10px] tracking-[0.4em] text-[var(--gold)] uppercase mb-4">Those who build for the reborn</div>
+              <h2 className="font-sans text-[clamp(36px,7vw,90px)] text-[var(--bone)] tracking-[0.05em] leading-none">THE ARCHITECTS</h2>
               <div className="w-16 h-[1px] bg-[var(--whisper)]/40 mx-auto mt-8" />
             </div>
             <div className="flex flex-col md:flex-row gap-10 md:gap-6 justify-center items-center md:items-start">
@@ -212,22 +197,11 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   transition={{ duration: 0.7, delay: 0.1 + i * 0.15, ease: [0.16, 1, 0.3, 1] }}
                   className="flex flex-col items-center gap-5 group w-full md:w-[280px]"
                 >
-                  <a
-                    href={`https://www.instagram.com/${a.instagram}/`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative block"
-                    aria-label={`${a.name} on Instagram`}
-                  >
+                  <a href={`https://www.instagram.com/${a.instagram}/`} target="_blank" rel="noopener noreferrer" className="relative block" aria-label={`${a.name} on Instagram`}>
                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[var(--bone)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 scale-110" />
                     <div className="relative w-[140px] h-[140px] rounded-full p-[2px] bg-gradient-to-br from-[var(--whisper)]/60 via-[var(--bone)]/10 to-[var(--whisper)]/20 group-hover:from-[var(--bone)]/80 group-hover:via-[var(--gold)]/30 transition-all duration-700">
                       <div className="w-full h-full rounded-full overflow-hidden bg-[var(--ash)]">
-                        <img
-                          src={a.avatar}
-                          alt={a.name}
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                        />
+                        <img src={a.avatar} alt={a.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                       </div>
                     </div>
                     <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-[var(--void)] border border-[var(--whisper)]/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -238,25 +212,13 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                     <div className="font-sans text-[clamp(20px,3vw,28px)] text-[var(--bone)] tracking-[0.08em] leading-none uppercase">{a.name}</div>
                     <div className="font-mono text-[10px] tracking-[0.25em] text-[var(--faded)] uppercase">{a.role}</div>
                     <div className="w-4 h-[1px] bg-[var(--whisper)]/30" />
-                    <a
-                      href={`https://www.instagram.com/${a.instagram}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-[10px] tracking-[0.2em] text-[var(--whisper)]/50 hover:text-[var(--gold)] transition-colors duration-300 uppercase"
-                    >
-                      @{a.instagram}
-                    </a>
+                    <a href={`https://www.instagram.com/${a.instagram}/`} target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] tracking-[0.2em] text-[var(--whisper)]/50 hover:text-[var(--gold)] transition-colors duration-300 uppercase">@{a.instagram}</a>
                   </div>
                 </motion.div>
               ))}
             </div>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 1 }}
-              className="mt-16 flex flex-col items-center gap-3"
-            >
-              <div className="font-serif italic text-[15px] text-[var(--parchment)]/60 max-w-[500px] leading-relaxed">
-                &quot;For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.&quot;
-              </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8, duration: 1 }} className="mt-16 flex flex-col items-center gap-3">
+              <div className="font-serif italic text-[15px] text-[var(--parchment)]/60 max-w-[500px] leading-relaxed">&quot;For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do.&quot;</div>
               <div className="font-mono text-[10px] tracking-[0.3em] text-[var(--faded)]/50 uppercase">— Ephesians 2:10</div>
             </motion.div>
           </div>
@@ -279,24 +241,10 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                 <React.Fragment key={i}>
                   {i > 0 && <div className="w-[1px] h-[40px] bg-[var(--whisper)]/40 mx-auto" />}
                   <div className="flex flex-col items-center group">
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.8 }}
-                      className="italic drop-shadow-[0_2px_8px_rgba(0,0,0,1)]"
-                    >
-                      &quot;{v.text}&quot;
-                    </motion.p>
+                    <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="italic drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">&quot;{v.text}&quot;</motion.p>
                     <div className="flex items-center gap-4 mt-4">
-                      <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase font-sans not-italic drop-shadow-[0_2px_8px_rgba(0,0,0,1)]">– {v.ref}</p>
-                      <button
-                        onClick={() => copyVerse(`"${v.text}"`, v.ref)}
-                        className="font-mono text-[9px] tracking-[0.2em] text-[var(--whisper)]/30 hover:text-[var(--gold)] transition-colors duration-200 uppercase opacity-0 group-hover:opacity-100 focus:opacity-100"
-                        aria-label="Copy verse"
-                      >
-                        [ copy ]
-                      </button>
+                      <p className="text-[13px] text-[var(--faded)] tracking-[0.3em] uppercase font-sans not-italic">– {v.ref}</p>
+                      <button onClick={() => copyVerse(`"${v.text}"`, v.ref)} className="font-mono text-[9px] tracking-[0.2em] text-[var(--whisper)]/30 hover:text-[var(--gold)] transition-colors duration-200 uppercase opacity-0 group-hover:opacity-100 focus:opacity-100" aria-label="Copy verse">[ copy ]</button>
                     </div>
                   </div>
                 </React.Fragment>
@@ -320,22 +268,18 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   transition={{ duration: .5, ease: 'easeInOut' }}
                   className="absolute inset-0 flex items-center justify-center px-4"
                 >
-                  <p className="font-serif italic text-[clamp(18px,3vw,30px)] text-[var(--parchment)] leading-[1.8] drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">
-                    "{prayers[activePrayerIndex]}"
-                  </p>
+                  <p className="font-serif italic text-[clamp(18px,3vw,30px)] text-[var(--parchment)] leading-[1.8] drop-shadow-[0_4px_10px_rgba(0,0,0,1)]">"{prayers[activePrayerIndex]}"</p>
                 </motion.div>
               </AnimatePresence>
             </div>
             <div className="mt-12 flex gap-3 flex-wrap justify-center">
               {prayers.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-[2px] transition-all duration-1000 ${idx === activePrayerIndex ? 'w-8 bg-[var(--bone)] shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'w-2 bg-[var(--whisper)]/30'}`}
-                />
+                <div key={idx} className={`h-[2px] transition-all duration-1000 ${idx === activePrayerIndex ? 'w-8 bg-[var(--bone)] shadow-[0_0_10px_rgba(255,255,255,0.8)]' : 'w-2 bg-[var(--whisper)]/30'}`} />
               ))}
             </div>
           </div>
         );
+
       default:
         return null;
     }
@@ -343,11 +287,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
 
   return (
     <>
-      <button
-        className="fixed top-7 right-8 z-[10001] w-5 h-5 focus:outline-none pointer-events-auto"
-        onClick={toggleMenu}
-        aria-label="Toggle Menu"
-      >
+      <button className="fixed top-7 right-8 z-[10001] w-5 h-5 focus:outline-none pointer-events-auto" onClick={toggleMenu} aria-label="Toggle Menu">
         <div className={`menu-icon ${isOpen ? 'open' : ''}`}>
           <span />
           <span />
@@ -363,10 +303,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             exit={{ x: '100%' }}
             transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            <div
-              className="absolute inset-0 z-0 opacity-20 bg-cover bg-center mix-blend-overlay"
-              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
-            />
+            <div className="absolute inset-0 z-0 opacity-20 bg-cover bg-center mix-blend-overlay" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }} />
             <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/95 to-[var(--void)]/80 backdrop-blur-3xl" />
             <div className="relative z-10 flex flex-col min-h-full">
               <div className="flex flex-col gap-4 md:gap-6 items-start">
@@ -381,20 +318,13 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                     className="group relative inline-block cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-50 active:opacity-100 hover:opacity-100 transition-all duration-300 uppercase pb-2 pointer-events-auto"
                   >
                     {item}
-                    {item === 'PRAYER REQUEST' && (
-                      <span className="ml-3 font-sans text-[10px] md:text-[14px] text-[var(--blood)] tracking-[0.2em] relative top-[-4px]">✝</span>
-                    )}
+                    {item === 'PRAYER REQUEST' && <span className="ml-3 font-sans text-[10px] md:text-[14px] text-[var(--blood)] tracking-[0.2em] relative top-[-4px]">✝</span>}
                     <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                   </motion.div>
                 ))}
-                <motion.hr
-                  className="w-full border-[var(--whisper)]/20 my-2"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
-                />
+                <motion.hr className="w-full border-[var(--whisper)]/20 my-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} />
                 <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.7, delay: 0.4, ease: 'easeOut' }}
                   onClick={() => { setIsOpen(false); setTimeout(() => setIsCheckoutOpen(true), 100); }}
                   className="group relative cursor-pointer font-sans text-[24px] md:text-[30px] tracking-[0.1em] text-[var(--bone)] opacity-35 active:opacity-100 hover:opacity-100 transition-all duration-300 flex items-center justify-between pb-2 uppercase pointer-events-auto w-full"
@@ -404,10 +334,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
                   <div className="absolute left-0 bottom-0 w-0 h-[1px] bg-[var(--bone)] group-hover:w-full transition-all duration-500 ease-out" />
                 </motion.div>
               </div>
-              <motion.div
-                className="mt-auto pt-8 flex flex-col gap-4"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-              >
+              <motion.div className="mt-auto pt-8 flex flex-col gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
                 <div className="flex flex-col gap-1 font-mono text-[10px] tracking-[0.35em] text-[var(--whisper)]/50 uppercase">
                   <span>9INETAILSS</span>
                   <span>EST. MMXXVI</span>
@@ -432,13 +359,10 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             exit={{ opacity: 0, filter: 'blur(20px)', scale: 0.95 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Solid base to block 3D scene */}
+            {/* Solid base — hides the 3D canvas completely */}
             <div className="fixed inset-0 z-0 bg-[var(--void)]" />
-            {/* Background image on top */}
-            <div
-              className="fixed inset-0 z-[1] opacity-20 bg-cover bg-center mix-blend-overlay"
-              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
-            />
+            {/* Subtle texture on top */}
+            <div className="fixed inset-0 z-[1] opacity-20 bg-cover bg-center mix-blend-overlay" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }} />
 
             <div className="relative z-20 flex justify-start w-full mb-8 flex-shrink-0">
               <div
@@ -452,12 +376,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
             </div>
 
             <div className="relative z-10 flex-1 w-full">
-              <motion.div
-                className="w-full"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.0, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              >
+              <motion.div className="w-full" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.0, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}>
                 {renderMenuContent()}
               </motion.div>
             </div>
@@ -465,10 +384,7 @@ export default function Menu({ onProductClick }: { onProductClick?: (product: an
         )}
       </AnimatePresence>
 
-      <PrayerRequest
-        isOpen={prayerRequestOpen}
-        onClose={() => setPrayerRequestOpen(false)}
-      />
+      <PrayerRequest isOpen={prayerRequestOpen} onClose={() => setPrayerRequestOpen(false)} />
     </>
   );
 }
