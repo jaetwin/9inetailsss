@@ -32,6 +32,7 @@ function shopifyToDisplayProduct(p: ShopifyProduct, idx: number) {
     shopifyVariantId: variant?.id,
     shopifyHandle: p.handle,
     description: p.description ?? null,
+    descriptionHtml: p.descriptionHtml ?? null,
     image: p.images.edges[0]?.node.url ?? null,
     images: p.images,
     variants: p.variants,
@@ -64,7 +65,6 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
   const [isHovered, setIsHovered] = useState(false);
   const intervalRef = useRef<any>(null);
 
-  // Start cycling on hover/touch, stop on leave
   const startCycling = () => {
     if (allImages.length <= 1) return;
     setIsHovered(true);
@@ -92,7 +92,6 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
       onClick={() => onProductClick(p)}
       onMouseEnter={startCycling}
       onMouseLeave={stopCycling}
-      // On mobile, cycle on touch
       onTouchStart={startCycling}
       onTouchEnd={stopCycling}
     >
@@ -101,43 +100,17 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
       <div className="aspect-[4/5] w-full relative overflow-hidden glass-panel clip-diagonal p-1 transition-all duration-500">
         <div className="w-full h-full relative overflow-hidden clip-diagonal bg-[var(--void)]/40 transition-colors duration-400 flex flex-col justify-between">
 
-          {/* RGB color split glitch cycling effect */}
           <AnimatePresence mode="wait">
             {allImages.length > 0 && isHovered && (
               <div key={currentImageIdx} className="absolute inset-0 w-full h-full glitch-container">
-                {/* Red channel */}
-                <img
-                  src={currentImage ?? ''}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover glitch-r"
-                  style={{ mixBlendMode: 'screen' }}
-                />
-                {/* Green channel */}
-                <img
-                  src={currentImage ?? ''}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover glitch-g"
-                  style={{ mixBlendMode: 'screen' }}
-                />
-                {/* Blue channel */}
-                <img
-                  src={currentImage ?? ''}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover glitch-b"
-                  style={{ mixBlendMode: 'screen' }}
-                />
-                {/* Base image on top at low opacity */}
-                <img
-                  src={currentImage ?? ''}
-                  alt={p.name}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{ opacity: 0.35 }}
-                />
+                <img src={currentImage ?? ''} alt="" className="absolute inset-0 w-full h-full object-cover glitch-r" style={{ mixBlendMode: 'screen' }} />
+                <img src={currentImage ?? ''} alt="" className="absolute inset-0 w-full h-full object-cover glitch-g" style={{ mixBlendMode: 'screen' }} />
+                <img src={currentImage ?? ''} alt="" className="absolute inset-0 w-full h-full object-cover glitch-b" style={{ mixBlendMode: 'screen' }} />
+                <img src={currentImage ?? ''} alt={p.name} className="absolute inset-0 w-full h-full object-cover" style={{ opacity: 0.35 }} />
               </div>
             )}
           </AnimatePresence>
 
-          {/* Card content on top of image */}
           <div className="relative z-10 flex flex-col justify-between h-full p-6 md:p-12">
             <div className="flex justify-between items-start">
               <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.1em] uppercase transition-colors duration-300 group-hover:text-[var(--bone)]">
