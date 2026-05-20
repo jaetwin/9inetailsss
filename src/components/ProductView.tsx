@@ -216,7 +216,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   // Multi-color: require color + size. Single-color (or no color option): only require size.
   const needsSelection = (colors.length > 1 && !selectedColor) || (sizes.length > 0 && !selectedSize);
 
-  const { mainText, sizeRows, htmlSizeTable } = parseDescription(product.description ?? '');
+  const { mainText, sizeRows, htmlSizeTable } = parseDescription(product.descriptionHtml ?? product.description ?? '');
 
   // Unified size table data — prefer htmlSizeTable, fall back to sizeRows
   const activeSizeTable = htmlSizeTable ?? sizeRows;
