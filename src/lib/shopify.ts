@@ -1,13 +1,9 @@
 const domain = import.meta.env.VITE_SHOPIFY_STORE_DOMAIN;
 const token = import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN;
-
 export const isShopifyConfigured = Boolean(domain && token);
-
 const endpoint = `https://${domain}/api/2024-10/graphql.json`;
-
 async function shopifyFetch(query: string, variables = {}) {
   if (!isShopifyConfigured) return null;
-
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -16,24 +12,20 @@ async function shopifyFetch(query: string, variables = {}) {
     },
     body: JSON.stringify({ query, variables }),
   });
-
   const data = await res.json();
-
   if (data.errors) {
     console.error('Shopify error:', data.errors);
     throw new Error('Shopify API error');
   }
-
   return data.data;
 }
-
 // ─── Types ──────────────────────────────────────────────────────────────────
-
 export interface ShopifyProduct {
   id: string;
   title: string;
   handle: string;
   description: string;
+  descriptionHtml: string;
   priceRange: {
     minVariantPrice: { amount: string; currencyCode: string };
   };
@@ -52,9 +44,7 @@ export interface ShopifyProduct {
     }[];
   };
 }
-
 // ─── Queries ────────────────────────────────────────────────────────────────
-
 const GET_ALL_PRODUCTS = `
   query GetAllProducts($first: Int!) {
     products(first: $first) {
@@ -64,6 +54,7 @@ const GET_ALL_PRODUCTS = `
           title
           handle
           description
+          descriptionHtml
           priceRange {
             minVariantPrice { amount currencyCode }
           }
@@ -86,7 +77,6 @@ const GET_ALL_PRODUCTS = `
     }
   }
 `;
-
 const CART_CREATE = `
   mutation CartCreate($input: CartInput!) {
     cartCreate(input: $input) {
@@ -98,9 +88,7 @@ const CART_CREATE = `
     }
   }
 `;
-
 // ─── Exports ────────────────────────────────────────────────────────────────
-
 export async function fetchProducts(count = 6): Promise<ShopifyProduct[]> {
   try {
     const data = await shopifyFetch(GET_ALL_PRODUCTS, { first: count });
@@ -110,7 +98,6 @@ export async function fetchProducts(count = 6): Promise<ShopifyProduct[]> {
     return [];
   }
 }
-
 export async function createShopifyCheckout(
   lines: { variantId: string; quantity: number }[],
 ): Promise<string | null> {
