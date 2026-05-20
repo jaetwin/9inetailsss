@@ -39,16 +39,61 @@ interface ProductViewProps {
 
 // ─── Size Guide Parser ───────────────────────────────────────────────────────
 function parseDescription(description: string) {
-  if (!description) return { mainText: '', sizeRows: null };
+  if (!description) return { mainText: '', sizeRows: null, htmlSizeTable: null };
 
+  // ── HTML table path (e.g. Crucifixion Hoodie) ─────────────────────────────
+  const tableMatch = description.match(/<table[\s\S]*?<\/table>/i);
+  if (tableMatch) {
+    // Strip the table (and any "Size guide" label before it) from mainText
+    const tableIndex = description.indexOf(tableMatch[0]);
+    // Walk back to strip any preceding "Size guide" text on the same line
+    let cutStart = tableIndex;
+    const before = description.slice(0, tableIndex);
+    const sizeGuideLabel = before.match(/Size guide\s*$/);
+    if (sizeGuideLabel) cutStart = before.length - sizeGuideLabel[0].length;
+
+    const mainText = description.slice(0, cutStart).trim();
+
+    // Parse the HTML table into headers + rows
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(tableMatch[0], 'text/html');
+    const rows = Array.from(doc.querySelectorAll('tr'));
+
+    let headers: string[] = [];
+    const tableRows: { size: string; values: string[] }[] = [];
+
+    rows.forEach((row, rowIdx) => {
+      const cells = Array.from(row.querySelectorAll('td, th')).map(c => c.textContent?.trim() ?? '');
+      if (cells.length === 0) return;
+
+      if (rowIdx === 0) {
+        // First row = headers; first cell is empty label, rest are measurement names
+        headers = cells.slice(1).filter(Boolean);
+        return;
+      }
+
+      // Subsequent rows: first cell is size label (may be empty for grouped headers)
+      const sizeLabel = cells[0];
+      if (!sizeLabel) return; // skip blank-size rows (sub-headers)
+      tableRows.push({ size: sizeLabel, values: cells.slice(1) });
+    });
+
+    return {
+      mainText,
+      sizeRows: null,
+      htmlSizeTable: tableRows.length > 0 ? { headers, rows: tableRows } : null,
+    };
+  }
+
+  // ── Plain-text path (e.g. R.E.K.O.E. Tee) ────────────────────────────────
   const guideIndex = description.indexOf('Size guide');
-  if (guideIndex === -1) return { mainText: description, sizeRows: null };
+  if (guideIndex === -1) return { mainText: description, sizeRows: null, htmlSizeTable: null };
 
   const mainText = description.slice(0, guideIndex).trim();
   const guideText = description.slice(guideIndex);
 
   const headerMatch = guideText.match(/Size guide\s+((?:[A-Z]+\s*(?:\([^)]*\))?\s*)+)/);
-  if (!headerMatch) return { mainText, sizeRows: null };
+  if (!headerMatch) return { mainText, sizeRows: null, htmlSizeTable: null };
 
   const headerStr = headerMatch[1].trim();
   const headers = headerStr.match(/[A-Z]+(?:\s*\([^)]*\))?/g) ?? [];
@@ -66,7 +111,11 @@ function parseDescription(description: string) {
   const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL', 'XXL', '3XL', 'XXXL'];
   sizeRows.sort((a, b) => sizeOrder.indexOf(a.size) - sizeOrder.indexOf(b.size));
 
-  return { mainText, sizeRows: sizeRows.length > 0 ? { headers, rows: sizeRows } : null };
+  return {
+    mainText,
+    sizeRows: sizeRows.length > 0 ? { headers, rows: sizeRows } : null,
+    htmlSizeTable: null,
+  };
 }
 
 // ─── Color name to CSS color ─────────────────────────────────────────────────
@@ -164,10 +213,13 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const isLowStock = availableCount > 0 && availableCount <= 3;
   const isSoldOut = availableCount === 0;
 
-  // Only require color selection if there are multiple colors to choose from
+  // Multi-color: require color + size. Single-color (or no color option): only require size.
   const needsSelection = (colors.length > 1 && !selectedColor) || (sizes.length > 0 && !selectedSize);
 
-  const { mainText, sizeRows } = parseDescription(product.description ?? '');
+  const { mainText, sizeRows, htmlSizeTable } = parseDescription(product.description ?? '');
+
+  // Unified size table data — prefer htmlSizeTable, fall back to sizeRows
+  const activeSizeTable = htmlSizeTable ?? sizeRows;
 
   return (
     <AnimatePresence>
@@ -315,7 +367,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </div>
             )}
 
-            {sizeRows && (
+            {activeSizeTable && (
               <motion.div
                 className="w-full mb-6"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
@@ -336,33 +388,35 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <table className="w-full text-left border-collapse mb-4">
-                        <thead>
-                          <tr className="border-b border-[var(--whisper)]/30">
-                            <th className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase py-2 pr-4">SIZE</th>
-                            {sizeRows.headers.map((h, i) => (
-                              <th key={i} className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase py-2 pr-4">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sizeRows.rows.map((row, i) => (
-                            <tr
-                              key={i}
-                              className={`border-b border-[var(--whisper)]/10 transition-colors duration-150 ${
-                                selectedSize === row.size ? 'bg-[var(--bone)]/5' : 'hover:bg-[var(--whisper)]/5'
-                              }`}
-                            >
-                              <td className={`font-sans text-[12px] tracking-[0.15em] py-2 pr-4 ${selectedSize === row.size ? 'text-[var(--bone)]' : 'text-[var(--faded)]'}`}>
-                                {row.size}
-                              </td>
-                              {row.values.map((val, j) => (
-                                <td key={j} className="font-sans text-[12px] text-[var(--parchment)] py-2 pr-4">{val}</td>
+                      <div className="overflow-x-auto mb-4">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-[var(--whisper)]/30">
+                              <th className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase py-2 pr-4 whitespace-nowrap">SIZE</th>
+                              {activeSizeTable.headers.map((h, i) => (
+                                <th key={i} className="font-sans text-[10px] tracking-[0.2em] text-[var(--faded)] uppercase py-2 pr-4 whitespace-nowrap">{h}</th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {activeSizeTable.rows.map((row, i) => (
+                              <tr
+                                key={i}
+                                className={`border-b border-[var(--whisper)]/10 transition-colors duration-150 ${
+                                  selectedSize === row.size ? 'bg-[var(--bone)]/5' : 'hover:bg-[var(--whisper)]/5'
+                                }`}
+                              >
+                                <td className={`font-sans text-[12px] tracking-[0.15em] py-2 pr-4 whitespace-nowrap ${selectedSize === row.size ? 'text-[var(--bone)]' : 'text-[var(--faded)]'}`}>
+                                  {row.size}
+                                </td>
+                                {row.values.map((val, j) => (
+                                  <td key={j} className="font-sans text-[12px] text-[var(--parchment)] py-2 pr-4 whitespace-nowrap">{val}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
