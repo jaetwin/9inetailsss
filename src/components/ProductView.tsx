@@ -96,20 +96,15 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   useEffect(() => {
-    // Determine if we need to lock scroll on desktop
     if (window.innerWidth >= 768) {
       document.body.style.overflow = 'hidden';
     }
-    // Trigger global 3D scene cinematic push-back
     document.body.classList.add('overlay-open');
-    
     setSelectedImageIdx(0);
     setSelectedSize(null);
     setSelectedColor(null);
     setShowSizeGuide(false);
-    return () => {
-      // Body cleanup handled by handleClose to synchronize with cross-fade
-    };
+    return () => {};
   }, [product]);
 
   const handleClose = () => {
@@ -169,7 +164,8 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const isLowStock = availableCount > 0 && availableCount <= 3;
   const isSoldOut = availableCount === 0;
 
-  const needsSelection = (colors.length > 0 && !selectedColor) || (sizes.length > 0 && !selectedSize);
+  // Only require color selection if there are multiple colors to choose from
+  const needsSelection = (colors.length > 1 && !selectedColor) || (sizes.length > 0 && !selectedSize);
 
   const { mainText, sizeRows } = parseDescription(product.description ?? '');
 
@@ -183,7 +179,6 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
           exit={{ opacity: 0, scale: 1.05, filter: 'blur(20px)' }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
-        {/* Background Grain/Texture — Fixed */}
         <div className="fixed inset-0 z-0 bg-gradient-to-t from-[var(--void)] via-[var(--void)]/60 to-[var(--void)]/40 pointer-events-none" />
         <div className="fixed inset-0 z-0 opacity-[0.15] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')`, backgroundSize: 'cover' }} />
 
@@ -374,6 +369,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
               </motion.div>
             )}
 
+            {/* Only show color selector if there are multiple colors */}
             {colors.length > 1 && (
               <motion.div
                 className="mb-6 w-full"
@@ -480,7 +476,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                     : 'bg-[var(--bone)] text-[var(--void)] border border-transparent hover:bg-[var(--gold)]'
                 }`}
               >
-                {isSoldOut ? 'SOLD OUT' : needsSelection ? `SELECT ${!selectedColor && colors.length > 1 ? 'A COLOR' : 'A SIZE'}` : 'ACQUIRE'}
+                {isSoldOut ? 'SOLD OUT' : needsSelection ? 'SELECT A SIZE' : 'ACQUIRE'}
               </button>
             </motion.div>
 
