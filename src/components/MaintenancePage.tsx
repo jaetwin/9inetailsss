@@ -32,12 +32,24 @@ export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) 
 
   const handleSmsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (window.postscript) {
-      window.postscript.popups.open(833871, {
-        activePopupBehavior: 'ALWAYS_DISMISS',
-        respectPopupStatus: false,
-      });
+
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    if (isIOS) {
+      window.location.href = 'sms:+18446621746&body=JOIN';
+    } else if (isAndroid) {
+      window.location.href = 'sms:+18446621746?body=JOIN';
+    } else {
+      // Desktop: use Postscript popup
+      if (window.postscript) {
+        window.postscript.popups.open(833871, {
+          activePopupBehavior: 'ALWAYS_DISMISS',
+          respectPopupStatus: false,
+        });
+      }
     }
+
     setSmsSent(true);
   };
 
