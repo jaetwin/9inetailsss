@@ -39,7 +39,6 @@ function shopifyToDisplayProduct(p: ShopifyProduct, idx: number) {
   };
 }
 
-// Detect touch/mobile device
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -58,9 +57,9 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
   isMobile: boolean;
   onProductClick: (p: any) => void;
 }) {
-  const allImages: string[] = p.images?.edges?.map((e: any) => e.node.url).filter(Boolean) ?? 
+  const allImages: string[] = p.images?.edges?.map((e: any) => e.node.url).filter(Boolean) ??
     (p.image ? [p.image] : []);
-  
+
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const intervalRef = useRef<any>(null);
@@ -148,7 +147,8 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    fetchProducts(6).then(shopifyProducts => {
+    // Fetch all products — no count cap so new Shopify items appear automatically
+    fetchProducts(250).then(shopifyProducts => {
       if (shopifyProducts.length > 0) {
         setProducts(shopifyProducts.map(shopifyToDisplayProduct));
       }
