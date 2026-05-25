@@ -37,9 +37,9 @@ export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) 
     const isAndroid = /Android/i.test(navigator.userAgent);
 
     if (isIOS) {
-      window.location.href = 'sms:+18446621746&body=JOIN';
+      window.location.href = 'sms:+18446621746&body=CHRIST';
     } else if (isAndroid) {
-      window.location.href = 'sms:+18446621746?body=JOIN';
+      window.location.href = 'sms:+18446621746?body=CHRIST';
     } else {
       // Desktop: use Postscript popup
       if (window.postscript) {
