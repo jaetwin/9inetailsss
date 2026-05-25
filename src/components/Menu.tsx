@@ -3,13 +3,34 @@ import { useToast } from './Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
 import PrayerRequest from './PrayerRequest';
-import { fetchProducts } from '../lib/shopify';
+import { fetchProducts, type ShopifyProduct } from '../lib/shopify';
+
+function shopifyToProduct(p: ShopifyProduct, idx: number) {
+  const variant = p.variants.edges[0]?.node;
+  const { amount, currencyCode } = p.priceRange.minVariantPrice;
+  const price = new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: currencyCode, maximumFractionDigits: 0,
+  }).format(Number(amount));
+  return {
+    id: idx + 1,
+    name: p.title.toUpperCase(),
+    price,
+    priceWithCurrency: price + ' ' + currencyCode,
+    shopifyVariantId: variant?.id,
+    shopifyHandle: p.handle,
+    description: p.description ?? null,
+    descriptionHtml: p.descriptionHtml ?? null,
+    image: p.images.edges[0]?.node.url ?? null,
+    images: p.images,
+    variants: p.variants,
+  };
+}
 
 export default function Menu({ onProductClick, onOverlayChange }: { onProductClick?: (product: any) => void; onOverlayChange?: (open: boolean) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [overlayMessage, setOverlayMessage] = useState<string | null>(null);
   const [prayerRequestOpen, setPrayerRequestOpen] = useState(false);
-  const [rekoeProduct, setRekoeProduct] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
   const { cartItems, setIsCheckoutOpen } = useCart();
   const { toast } = useToast();
 
@@ -19,13 +40,13 @@ export default function Menu({ onProductClick, onOverlayChange }: { onProductCli
   };
 
   useEffect(() => {
-    fetchProducts(6).then(products => {
-      const rekoe = products.find((p: any) => p.title.toUpperCase().includes('R.E.K.O.E'));
-      if (rekoe) setRekoeProduct(rekoe);
+    fetchProducts(250).then(shopifyProducts => {
+      if (shopifyProducts.length > 0) {
+        setProducts(shopifyProducts.map(shopifyToProduct));
+      }
     });
   }, []);
 
-  // Notify parent when overlay opens/closes
   useEffect(() => {
     onOverlayChange?.(!!overlayMessage);
   }, [overlayMessage, onOverlayChange]);
@@ -104,32 +125,26 @@ export default function Menu({ onProductClick, onOverlayChange }: { onProductCli
     switch(overlayMessage) {
       case 'COLLECTION':
         return (
-          <div className="flex flex-wrap gap-12 justify-center items-center max-w-6xl w-full mx-auto">
-            {[1, 2, 3].map((i) => {
-              const isRekoe = i === 1 && rekoeProduct;
-              const imageUrl = isRekoe ? rekoeProduct.images.edges[0]?.node.url : null;
-              return (
-                <div
-                  key={i}
+          <div className="flex flex-wrap gap-12 justify-center items-start max-w-6xl w-full mx-auto pb-12">
+            {products.length === 0 ? (
+              // Loading state
+              [1, 2, 3].map(i => (
+                <div key={i} className="flex flex-col gap-6">
+                  <div className="w-[320px] h-[440px] bg-[var(--whisper)]/5 border border-[var(--whisper)]/20 animate-pulse" />
+                  <div className="h-8 w-48 bg-[var(--whisper)]/10 animate-pulse" />
+                </div>
+              ))
+            ) : (
+              products.map((p, idx) => (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: idx * 0.08, ease: [0.16, 1, 0.3, 1] }}
                   className="flex flex-col gap-6 group cursor-pointer"
                   onClick={() => {
-                    if (isRekoe && onProductClick) {
-                      const variant = rekoeProduct.variants.edges[0]?.node;
-                      const { amount, currencyCode } = rekoeProduct.priceRange.minVariantPrice;
-                      const price = new Intl.NumberFormat('en-US', {
-                        style: 'currency', currency: currencyCode, maximumFractionDigits: 0,
-                      }).format(Number(amount));
-                      onProductClick({
-                        id: 1,
-                        name: rekoeProduct.title.toUpperCase(),
-                        price,
-                        shopifyVariantId: variant?.id,
-                        shopifyHandle: rekoeProduct.handle,
-                        description: rekoeProduct.description ?? null,
-                        image: imageUrl,
-                        images: rekoeProduct.images,
-                        variants: rekoeProduct.variants,
-                      });
+                    if (onProductClick) {
+                      onProductClick(p);
                       setOverlayMessage(null);
                       setIsOpen(false);
                     }
@@ -137,29 +152,23 @@ export default function Menu({ onProductClick, onOverlayChange }: { onProductCli
                 >
                   <div className="w-[320px] h-[440px] bg-[var(--whisper)]/5 border border-[var(--whisper)]/20 overflow-hidden relative transition-transform duration-700 group-hover:-translate-y-4">
                     <div className="absolute inset-0 bg-gradient-to-t from-[var(--void)]/70 to-transparent z-10" />
-                    {imageUrl ? (
-                      <img src={imageUrl} alt={rekoeProduct.title} className="absolute inset-0 w-full h-full object-cover" />
+                    {p.image ? (
+                      <img src={p.image} alt={p.name} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center font-sans text-[12px] text-[var(--bone)]/30 tracking-[0.2em] uppercase">FILE_NOT_FOUND</div>
                     )}
                   </div>
                   <div>
                     <div className="font-bebas text-[36px] tracking-[0.05em] text-[var(--bone)] group-hover:text-[var(--blood)] transition-colors duration-500">
-                      {isRekoe ? rekoeProduct.title.toUpperCase() : `GARMENT ${String(i).padStart(3, '0')}`}
+                      {p.name}
                     </div>
                     <div className="font-sans text-[13px] text-[var(--faded)] tracking-[0.2em] mt-1">
-                      {isRekoe
-                        ? new Intl.NumberFormat('en-US', {
-                            style: 'currency',
-                            currency: rekoeProduct.priceRange.minVariantPrice.currencyCode,
-                            maximumFractionDigits: 0,
-                          }).format(Number(rekoeProduct.priceRange.minVariantPrice.amount)) + ' USD'
-                        : '$120.00 USD'}
+                      {p.priceWithCurrency}
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                </motion.div>
+              ))
+            )}
           </div>
         );
 
@@ -359,9 +368,7 @@ export default function Menu({ onProductClick, onOverlayChange }: { onProductCli
             exit={{ opacity: 0, filter: 'blur(20px)', scale: 0.95 }}
             transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] }}
           >
-            {/* Solid base — hides the 3D canvas completely */}
             <div className="fixed inset-0 z-0 bg-[var(--void)]" />
-            {/* Subtle texture on top */}
             <div className="fixed inset-0 z-[1] opacity-20 bg-cover bg-center mix-blend-overlay" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }} />
 
             <div className="relative z-20 flex justify-start w-full mb-8 flex-shrink-0">
