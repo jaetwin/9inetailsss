@@ -1,7 +1,6 @@
 @import '@fontsource/cinzel/400.css';
 @import '@fontsource/cinzel/700.css';
 @import '@fontsource/unifrakturmaguntia/400.css';
-
 @import 'tailwindcss';
 
 *, *::before, *::after {
@@ -12,6 +11,7 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -21,10 +21,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  overflow-x: hidden;
+  /* prevent iOS bounce causing layout issues */
+  overscroll-behavior: none;
 }
 
 #root {
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Scrollbar */
@@ -40,7 +44,7 @@ body {
 .font-bebas      { font-family: 'Bebas Neue', sans-serif; }
 .font-mono-ibm   { font-family: 'IBM Plex Mono', monospace; }
 
-
+/* Postscript widget positioning */
 #ps_widget_container {
   left: auto !important;
   right: 0 !important;
@@ -49,4 +53,129 @@ iframe[title="Marketing Popup"] {
   left: auto !important;
   right: 0 !important;
   inset: auto 0px 0px auto !important;
+}
+
+/* Overlay open — lock body scroll on mobile too */
+body.overlay-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Glass panel — ensure solid enough bg on mobile */
+.glass-panel {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-card {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Scripture accent bar */
+.scripture-accent-bar {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+}
+
+/* Cross mark */
+.cross-mark {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(600px, 90vw);
+  height: min(600px, 90vw);
+  opacity: 0.015;
+  pointer-events: none;
+}
+.cross-mark::before,
+.cross-mark::after {
+  content: '';
+  position: absolute;
+  background: var(--bone, #e8e2d6);
+}
+.cross-mark::before {
+  width: 2px; height: 100%;
+  left: 50%; transform: translateX(-50%);
+}
+.cross-mark::after {
+  width: 100%; height: 2px;
+  top: 35%; transform: translateY(-50%);
+}
+
+/* Sanctuary card */
+.sanctuary-card {
+  position: relative;
+}
+
+/* Clip diagonal — disable on small screens to avoid clipping content */
+.clip-diagonal {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+}
+@media (max-width: 640px) {
+  .clip-diagonal {
+    clip-path: none;
+  }
+}
+
+/* Text glow */
+.text-glow {
+  text-shadow: 0 0 40px rgba(232, 226, 214, 0.15);
+}
+
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Glitch effect */
+.glitch-container { position: relative; }
+.glitch-r { transform: translate(2px, 0); opacity: 0.4; }
+.glitch-g { transform: translate(-2px, 0); opacity: 0.4; }
+.glitch-b { transform: translate(0, 2px); opacity: 0.4; }
+
+/* Menu icon */
+.menu-icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 20px;
+  height: 14px;
+  cursor: pointer;
+}
+.menu-icon span {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--bone, #e8e2d6);
+  transition: all 0.4s ease;
+  transform-origin: center;
+}
+.menu-icon.open span:nth-child(1) {
+  transform: translateY(6.5px) rotate(45deg);
+}
+.menu-icon.open span:nth-child(2) {
+  transform: translateY(-6.5px) rotate(-45deg);
+}
+
+/* Mobile tap highlight removal */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile: ensure buttons are always tappable */
+@media (max-width: 768px) {
+  button, [role="button"], a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Exception for tiny decorative elements */
+  .menu-icon, .menu-icon span {
+    min-height: unset;
+    display: block;
+  }
 }
