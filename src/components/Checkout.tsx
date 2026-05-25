@@ -2,10 +2,99 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
 
+// ─── SMS Prompt ───────────────────────────────────────────────────────────────
+function SmsPrompt({ onOptIn, onSkip }: { onOptIn: () => void; onSkip: () => void }) {
+  const [sent, setSent] = useState(false);
+
+  const handleSms = () => {
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+
+    if (isIOS) {
+      window.open('sms:+18446621746&body=JOIN', '_blank');
+    } else if (isAndroid) {
+      window.open('sms:+18446621746?body=JOIN', '_blank');
+    } else {
+      if ((window as any).postscript) {
+        (window as any).postscript.popups.open(833871, {
+          activePopupBehavior: 'ALWAYS_DISMISS',
+          respectPopupStatus: false,
+        });
+      }
+    }
+    setSent(true);
+    setTimeout(onOptIn, 1800);
+  };
+
+  return (
+    <motion.div
+      key="sms"
+      initial={{ opacity: 0, y: 10, filter: 'blur(5px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, y: -10, filter: 'blur(5px)' }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col h-full items-center justify-center text-center relative z-10 gap-8"
+    >
+      <div className="flex flex-col gap-3">
+        <p className="font-sans text-[10px] tracking-[0.5em] text-[var(--faded)] uppercase">
+          Before you go
+        </p>
+        <h2 className="font-gothic text-[clamp(36px,5vw,60px)] text-[var(--bone)] tracking-normal leading-tight">
+          Stay in the<br />Sanctuary
+        </h2>
+        <div className="w-8 h-[1px] bg-[var(--whisper)] opacity-40 mx-auto" />
+        <p className="font-serif italic text-[var(--parchment)] text-[16px] leading-relaxed max-w-[380px] mx-auto">
+          Get notified about drops, restocks, and early access via SMS.
+        </p>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {!sent ? (
+          <motion.div
+            key="btns"
+            className="flex flex-col gap-3 w-full max-w-[340px]"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <button
+              onClick={handleSms}
+              className="w-full bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[12px] tracking-[0.4em] uppercase py-5 hover:bg-[var(--gold)] transition-colors duration-500 cursor-pointer shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+            >
+              Notify Me via SMS
+            </button>
+            <button
+              onClick={onSkip}
+              className="w-full bg-transparent border border-[var(--whisper)]/20 text-[var(--faded)] font-sans text-[11px] tracking-[0.3em] uppercase py-4 hover:text-[var(--bone)] hover:border-[var(--whisper)]/50 transition-all duration-500 cursor-pointer"
+            >
+              No thanks
+            </button>
+          </motion.div>
+        ) : (
+          <motion.p
+            key="confirmed"
+            className="font-sans text-[11px] tracking-[0.4em] text-[var(--bone)] uppercase"
+            initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+          >
+            ✦ You'll be the first to know
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 export default function Checkout() {
-  const { isCheckoutOpen, setIsCheckoutOpen, cartItems, cartTotal, removeFromCart, updateQuantity, clearCart, goToShopifyCheckout, shopifyEnabled } = useCart();
-  const [step, setStep] = useState(1);
+  const {
+    isCheckoutOpen, setIsCheckoutOpen,
+    cartItems, cartTotal,
+    removeFromCart, updateQuantity,
+    clearCart, goToShopifyCheckout, shopifyEnabled,
+  } = useCart();
+
+  // step: 'cart' | 'sms' | 'done'
+  const [step, setStep] = useState<'cart' | 'sms' | 'done'>('cart');
   const [redirecting, setRedirecting] = useState(false);
+
+  const hasOptedIn = typeof window !== 'undefined' && localStorage.getItem('sms_opted_in') === 'true';
 
   useEffect(() => {
     if (isCheckoutOpen) {
@@ -20,25 +109,63 @@ export default function Checkout() {
 
   const handleClose = () => {
     setIsCheckoutOpen(false);
-    setTimeout(() => setStep(1), 800);
+    setTimeout(() => setStep('cart'), 800);
+  };
+
+  const handleCheckout = async () => {
+    if (cartItems.length === 0) return;
+    setRedirecting(true);
+
+    if (!hasOptedIn) {
+      // Show SMS prompt, then redirect
+      setStep('sms');
+      setTimeout(async () => {
+        if (shopifyEnabled) {
+          await goToShopifyCheckout();
+        } else {
+          clearCart();
+          setStep('done');
+        }
+        setRedirecting(false);
+      }, 1000);
+    } else {
+      // Already opted in — go straight to checkout
+      if (shopifyEnabled) {
+        await goToShopifyCheckout();
+      } else {
+        clearCart();
+        setStep('done');
+      }
+      setRedirecting(false);
+    }
+  };
+
+  const handleSmsOptIn = () => {
+    localStorage.setItem('sms_opted_in', 'true');
+  };
+
+  const handleSmsSkip = () => {
+    localStorage.setItem('sms_opted_in', 'true');
+    setStep('cart');
   };
 
   const stepVariants = {
     initial: { opacity: 0, x: 20, filter: 'blur(5px)' },
     animate: { opacity: 1, x: 0, filter: 'blur(0px)' },
-    exit: { opacity: 0, x: -20, filter: 'blur(5px)' }
+    exit: { opacity: 0, x: -20, filter: 'blur(5px)' },
   };
 
-  const renderStep1 = () => (
-    <motion.div 
-      key="step1"
-      variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+  const renderCart = () => (
+    <motion.div
+      key="cart"
+      variants={stepVariants} initial="initial" animate="animate" exit="exit"
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col h-full"
     >
       <h2 className="font-gothic text-[clamp(40px,5vw,70px)] text-[var(--bone)] tracking-normal mb-8 border-b border-[var(--whisper)]/30 pb-4 shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
         Cart Review
       </h2>
-      
+
       <div className="flex-1 overflow-y-auto pr-4 space-y-6 no-scrollbar relative z-10">
         {cartItems.length === 0 ? (
           <div className="text-[var(--faded)] font-sans text-[14px] tracking-[0.2em] italic uppercase">
@@ -55,19 +182,18 @@ export default function Checkout() {
                   {item.name}
                 </div>
               </div>
-              
               <div className="flex items-center gap-8">
                 <div className="flex items-center gap-4 font-sans text-[18px]">
-                  <button onClick={() => updateQuantity(item.id, -1)} className="text-[var(--faded)] hover:text-[var(--blood)] transition-colors duration-300 px-2 py-1">−</button>
+                  <button onClick={() => updateQuantity(item.id, -1)} className="text-[var(--faded)] hover:text-[var(--blood)] transition-colors duration-300 px-2 py-1 cursor-pointer">−</button>
                   <span className="text-[var(--bone)]">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)} className="text-[var(--faded)] hover:text-[var(--gold)] transition-colors duration-300 px-2 py-1">+</button>
+                  <button onClick={() => updateQuantity(item.id, 1)} className="text-[var(--faded)] hover:text-[var(--gold)] transition-colors duration-300 px-2 py-1 cursor-pointer">+</button>
                 </div>
                 <div className="font-sans text-[20px] tracking-[0.1em] text-[var(--bone)] w-[100px] text-right">
                   ${item.price * item.quantity}
                 </div>
-                <button 
+                <button
                   onClick={() => removeFromCart(item.id)}
-                  className="text-[var(--faded)] hover:text-[var(--blood)] font-sans text-[11px] tracking-[0.2em] transition-colors duration-300 uppercase underline decoration-[var(--whisper)]/30 underline-offset-4"
+                  className="text-[var(--faded)] hover:text-[var(--blood)] font-sans text-[11px] tracking-[0.2em] transition-colors duration-300 uppercase underline decoration-[var(--whisper)]/30 underline-offset-4 cursor-pointer"
                 >
                   REMOVE
                 </button>
@@ -82,99 +208,20 @@ export default function Checkout() {
           <div className="font-sans text-[12px] text-[var(--faded)] tracking-[0.2em] mb-2 uppercase">SUBTOTAL</div>
           <div className="font-bebas text-[48px] text-[var(--bone)] tracking-[0.05em] leading-none">${cartTotal}</div>
         </div>
-        
-        <button 
-          disabled={cartItems.length === 0}
-          onClick={() => setStep(2)}
-          className="bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[14px] tracking-[0.3em] px-10 py-5 hover:bg-[var(--gold)] transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed uppercase shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]"
-        >
-          PROCEED TO SHIPPING
-        </button>
-      </div>
-    </motion.div>
-  );
-
-  const renderStep2 = () => (
-    <motion.div 
-      key="step2"
-      variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col h-full"
-    >
-      <h2 className="font-gothic text-[clamp(40px,5vw,70px)] text-[var(--bone)] tracking-normal mb-8 border-b border-[var(--whisper)]/30 pb-4 shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-        Shipping Identity
-      </h2>
-      <div className="flex-1 overflow-y-auto space-y-8 relative z-10 pt-4">
-        <input type="text" placeholder="FULL NAME" className="w-full bg-transparent border-b border-[var(--whisper)]/30 p-4 font-sans text-[16px] tracking-[0.1em] text-[var(--bone)] outline-none focus:border-[var(--bone)] placeholder:text-[var(--faded)] transition-colors duration-500" />
-        <input type="email" placeholder="EMAIL ADDRESS" className="w-full bg-transparent border-b border-[var(--whisper)]/30 p-4 font-sans text-[16px] tracking-[0.1em] text-[var(--bone)] outline-none focus:border-[var(--bone)] placeholder:text-[var(--faded)] transition-colors duration-500" />
-        <textarea placeholder="SHIPPING ADDRESS" rows={3} className="w-full bg-transparent border-b border-[var(--whisper)]/30 p-4 font-sans text-[16px] tracking-[0.1em] text-[var(--bone)] outline-none focus:border-[var(--bone)] placeholder:text-[var(--faded)] transition-colors duration-500 resize-none" />
-      </div>
-      <div className="mt-8 pt-6 border-t border-[var(--whisper)]/30 flex justify-between relative z-10">
-        <button onClick={() => setStep(1)} className="text-[var(--faded)] hover:text-[var(--bone)] font-sans text-[13px] tracking-[0.2em] transition-colors duration-300 uppercase">
-          ← RETURN
-        </button>
-        <button onClick={() => setStep(3)} className="bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[14px] tracking-[0.3em] px-10 py-5 hover:bg-[var(--gold)] transition-colors duration-500 uppercase shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-          CONTINUE TO PAYMENT
-        </button>
-      </div>
-    </motion.div>
-  );
-
-  const renderStep3 = () => (
-    <motion.div
-      key="step3"
-      variants={stepVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="flex flex-col h-full"
-    >
-      <h2 className="font-gothic text-[clamp(40px,5vw,70px)] text-[var(--bone)] tracking-normal mb-8 border-b border-[var(--whisper)]/30 pb-4 shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
-        Secure Garments
-      </h2>
-
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 relative z-10">
-        <div className="font-bebas text-[clamp(48px,6vw,80px)] text-[var(--bone)] tracking-[0.05em] leading-none">
-          TOTAL: ${cartTotal}
-        </div>
-
-        <div className="max-w-[500px] text-center space-y-4">
-          <p className="font-serif italic text-[var(--parchment)] text-[18px] leading-relaxed">
-            You will be taken to Shopify's secure checkout to complete your order.
-          </p>
-          <p className="font-sans text-[11px] text-[var(--faded)] tracking-[0.25em] uppercase">
-            Payment · Shipping · Order Confirmation — all handled securely by Shopify
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-8 pt-6 border-t border-[var(--whisper)]/30 flex justify-between items-center relative z-10">
-        <button onClick={() => setStep(2)} className="text-[var(--faded)] hover:text-[var(--bone)] font-sans text-[13px] tracking-[0.2em] transition-colors duration-300 uppercase">
-          ← RETURN
-        </button>
         <button
-          disabled={redirecting}
-          onClick={async () => {
-            if (shopifyEnabled) {
-              setRedirecting(true);
-              await goToShopifyCheckout();
-              // If checkout URL was null (items have no variant IDs), fall back to confirmation
-              setRedirecting(false);
-              clearCart();
-              setStep(4);
-            } else {
-              // Shopify not configured — show confirmation anyway (dev/demo mode)
-              clearCart();
-              setStep(4);
-            }
-          }}
-          className="bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[14px] tracking-[0.3em] px-10 py-5 hover:bg-[var(--gold)] transition-colors duration-500 uppercase shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] disabled:opacity-50"
+          disabled={cartItems.length === 0 || redirecting}
+          onClick={handleCheckout}
+          className="bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[14px] tracking-[0.3em] px-10 py-5 hover:bg-[var(--gold)] transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed uppercase shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] cursor-pointer"
         >
-          {redirecting ? 'PREPARING...' : 'SEAL THE GARMENTS'}
+          {redirecting ? 'PREPARING...' : 'CHECKOUT'}
         </button>
       </div>
     </motion.div>
   );
 
-  const renderStep4 = () => (
-    <motion.div 
-      key="step4"
+  const renderDone = () => (
+    <motion.div
+      key="done"
       initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
       animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
       transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
@@ -186,9 +233,9 @@ export default function Checkout() {
       <p className="font-serif italic text-[var(--parchment)] text-[24px] mb-16 max-w-[600px] leading-relaxed drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
         Your order has been accepted. The garments will be prepared soon.
       </p>
-      <button 
-        onClick={handleClose} 
-        className="border border-[var(--whisper)]/40 text-[var(--bone)] font-sans text-[14px] tracking-[0.3em] px-12 py-5 hover:bg-[var(--bone)] hover:text-[var(--void)] transition-all duration-500 hover:tracking-[0.4em] uppercase"
+      <button
+        onClick={handleClose}
+        className="border border-[var(--whisper)]/40 text-[var(--bone)] font-sans text-[14px] tracking-[0.3em] px-12 py-5 hover:bg-[var(--bone)] hover:text-[var(--void)] transition-all duration-500 hover:tracking-[0.4em] uppercase cursor-pointer"
       >
         RETURN TO SANCTUARY
       </button>
@@ -197,48 +244,53 @@ export default function Checkout() {
 
   return (
     <AnimatePresence>
-      <motion.div 
+      <motion.div
         className="fixed inset-0 z-[10020] flex justify-center items-center pointer-events-auto overflow-hidden"
         initial={{ opacity: 0, filter: 'blur(20px)' }}
         animate={{ opacity: 1, filter: 'blur(0px)' }}
         exit={{ opacity: 0, filter: 'blur(20px)' }}
         transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
-        {/* Deep background blur / overlay directly behind the modal */}
-        <div className="absolute inset-0 bg-[var(--void)]/80 backdrop-blur-2xl transition-all duration-1000" onClick={handleClose} />
+        <div className="absolute inset-0 bg-[var(--void)]/80 backdrop-blur-2xl" onClick={handleClose} />
 
-        {/* Modal Container */}
         <div className="w-[95vw] max-w-[1000px] h-[85vh] md:h-[80vh] bg-[var(--abyss)] border border-[var(--iron)] p-8 md:p-14 relative overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.9)]">
-          
-          {/* Marble Texture Background */}
-          <div 
+
+          {/* Marble texture */}
+          <div
             className="absolute inset-0 z-0 opacity-[0.15] bg-cover bg-center mix-blend-overlay pointer-events-none"
             style={{ backgroundImage: `url('https://images.unsplash.com/photo-1600166898405-da9535204843?auto=format&fit=crop&q=80')` }}
           />
           <div className="absolute inset-0 z-0 bg-gradient-to-t from-[var(--abyss)] via-transparent to-transparent opacity-80 pointer-events-none" />
 
-          {/* Close Button */}
-          <div className="absolute top-8 right-8 z-[10030] cursor-pointer group p-4 border border-transparent hover:border-[var(--whisper)]/30 hover:bg-[var(--void)]/50 transition-all duration-500" onClick={handleClose}>
+          {/* Close button */}
+          <div
+            className="absolute top-8 right-8 z-[10030] cursor-pointer group p-4 border border-transparent hover:border-[var(--whisper)]/30 hover:bg-[var(--void)]/50 transition-all duration-500"
+            onClick={handleClose}
+          >
             <div className="font-sans text-[13px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--blood)] transition-colors uppercase">
               ABORT
             </div>
           </div>
 
-          {/* Step Indicator Line */}
-          {step < 4 && (
+          {/* Progress bar — only on cart step */}
+          {step === 'cart' && (
             <div className="absolute top-0 left-0 w-full flex h-[2px] bg-[var(--void)] opacity-50 z-20">
-              <div className="bg-[var(--bone)] transition-all duration-[1200ms] ease-out shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${(step / 3) * 100}%` }} />
+              <div className="bg-[var(--bone)] w-full shadow-[0_0_10px_rgba(255,255,255,0.5)] transition-all duration-[1200ms]" />
             </div>
           )}
 
-          {/* Render Active Step with AnimatePresence */}
           <div className="h-full relative">
-             <AnimatePresence mode="wait">
-               {step === 1 && renderStep1()}
-               {step === 2 && renderStep2()}
-               {step === 3 && renderStep3()}
-               {step === 4 && renderStep4()}
-             </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {step === 'cart' && renderCart()}
+              {step === 'sms' && (
+                <SmsPrompt
+                  key="sms"
+                  onOptIn={handleSmsOptIn}
+                  onSkip={handleSmsSkip}
+                />
+              )}
+              {step === 'done' && renderDone()}
+            </AnimatePresence>
           </div>
         </div>
       </motion.div>
