@@ -105,11 +105,6 @@ export default function Room3() {
                 title: 'Scripture-Sourced',
                 body: 'Every graphic is rooted in Scripture — not trends, not aesthetics for aesthetics\' sake. The Word on your back should mean something.',
               },
-              {
-                num: '03',
-                title: 'Always Limited',
-                body: 'We do not restock. Each drop is sealed. When it\'s gone, it\'s gone. You either carried it or you didn\'t.',
-              },
             ].map(({ num, title, body }) => (
               <div key={num} className="flex gap-6 group">
                 <div className="font-mono text-[11px] tracking-[0.2em] text-[var(--blood)] pt-1 shrink-0">{num}</div>
