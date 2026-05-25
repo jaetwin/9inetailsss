@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; 
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { useProgress } from '@react-three/drei';
 import tailLogo from './9tailsslogo.png';
@@ -10,7 +10,6 @@ interface Room1Props {
   onToggleMute: () => void;
 }
 
-// ─── Daily Verse ─────────────────────────────────────────────────────────────
 const VERSES = [
   { text: "I can do all things through Christ who strengthens me.", ref: "Philippians 4:13" },
   { text: "For God so loved the world that he gave his one and only Son.", ref: "John 3:16" },
@@ -54,11 +53,7 @@ function getDailyVerse() {
 
 declare global {
   interface Window {
-    postscript?: {
-      popups: {
-        open: (id: number, options?: object) => void;
-      };
-    };
+    postscript?: { popups: { open: (id: number, options?: object) => void } };
   }
 }
 
@@ -66,117 +61,106 @@ export default function Room1({ onEnter, onPlayMusic, isMuted, onToggleMute }: R
   const [isOpen, setIsOpen] = useState(false);
   const { progress, active } = useProgress();
   const verse = getDailyVerse();
-  
+
   const handleEnter = () => {
     if (isOpen) return;
     onPlayMusic();
     setIsOpen(true);
-
-    // Open Postscript SMS popup after 3 seconds
     setTimeout(() => {
       if (window.postscript) {
-        window.postscript.popups.open(833871, {
-          activePopupBehavior: 'ALWAYS_DISMISS',
-          respectPopupStatus: true
-        });
+        window.postscript.popups.open(833871, { activePopupBehavior: 'ALWAYS_DISMISS', respectPopupStatus: true });
       }
     }, 3000);
-
-    setTimeout(() => {
-      onEnter();
-    }, 1800);
+    setTimeout(() => { onEnter(); }, 1800);
   };
 
   return (
-    <div className="fixed inset-0 w-full h-screen z-[9990] pointer-events-none flex overflow-hidden">
+    <div className="fixed inset-0 w-full h-[100dvh] z-[9990] pointer-events-none flex overflow-hidden">
 
-      {/* Mute Button - Bottom Left */}
-      <div className="absolute bottom-8 left-8 z-[9999] pointer-events-auto">
-        <button 
+      {/* Mute Button */}
+      <div className="absolute bottom-6 left-6 md:bottom-8 md:left-8 z-[9999] pointer-events-auto">
+        <button
           onClick={onToggleMute}
-          className="text-[var(--faded)] hover:text-[var(--bone)] transition-colors duration-300 uppercase tracking-[0.2em] text-[11px] cursor-pointer"
+          className="text-[var(--faded)] hover:text-[var(--bone)] transition-colors duration-300 uppercase tracking-[0.2em] text-[11px] cursor-pointer py-2 px-1"
         >
           {isMuted ? "[ Unmute ]" : "[ Mute ]"}
         </button>
       </div>
 
       {/* Left Gate */}
-      <motion.div 
+      <motion.div
         className="w-1/2 h-full bg-[var(--void)] border-r border-[var(--whisper)]/30 flex items-center justify-end relative pointer-events-auto origin-left overflow-hidden"
         initial={{ rotateY: 0 }}
         animate={{ rotateY: isOpen ? -100 : 0 }}
         transition={{ duration: 2.2, ease: [0.76, 0, 0.24, 1] }}
         style={{ perspective: 1200 }}
       >
-        <img 
-          src={tailLogo} 
-          alt="9ineTailss" 
-          className="absolute top-[40%] right-[-3%] translate-x-1/2 -translate-y-1/2 w-[clamp(180px,40vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10" 
+        <img
+          src={tailLogo}
+          alt="9ineTailss"
+          className="absolute top-[40%] right-[-3%] translate-x-1/2 -translate-y-1/2 w-[clamp(140px,38vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10"
         />
-        <motion.div 
+        <motion.div
           className="absolute right-0 top-0 bottom-0 w-[1px] bg-[#ffeedd]"
-          animate={{ 
+          animate={{
             boxShadow: isOpen ? "0 0 100px 50px rgba(255,238,221,0)" : "0 0 60px 15px rgba(255,238,221,0.5)",
-            opacity: isOpen ? 0 : 1
+            opacity: isOpen ? 0 : 1,
           }}
           transition={{ duration: 1.5 }}
         />
       </motion.div>
 
       {/* Right Gate */}
-      <motion.div 
+      <motion.div
         className="w-1/2 h-full bg-[var(--void)] border-l border-[var(--whisper)]/30 flex items-center justify-start relative pointer-events-auto origin-right overflow-hidden"
         initial={{ rotateY: 0 }}
         animate={{ rotateY: isOpen ? 100 : 0 }}
         transition={{ duration: 2.2, ease: [0.76, 0, 0.24, 1] }}
         style={{ perspective: 1200 }}
       >
-        <img 
-          src={tailLogo} 
-          alt="9ineTailss" 
-          className="absolute top-[40%] left-[3%] -translate-x-1/2 -translate-y-1/2 w-[clamp(180px,40vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10" 
+        <img
+          src={tailLogo}
+          alt="9ineTailss"
+          className="absolute top-[40%] left-[3%] -translate-x-1/2 -translate-y-1/2 w-[clamp(140px,38vw,700px)] max-w-none h-auto object-contain drop-shadow-[0_0_40px_rgba(255,255,255,0.25)] pointer-events-none z-10"
         />
-        <motion.div 
+        <motion.div
           className="absolute left-0 top-0 bottom-0 w-[1px] bg-[#ffeedd]"
-          animate={{ 
+          animate={{
             boxShadow: isOpen ? "0 0 100px 50px rgba(255,238,221,0)" : "0 0 60px 15px rgba(255,238,221,0.5)",
-            opacity: isOpen ? 0 : 1
+            opacity: isOpen ? 0 : 1,
           }}
           transition={{ duration: 1.5 }}
         />
       </motion.div>
 
-      {/* Daily Verse + Enter Button */}
-      <motion.div 
-        className="absolute top-[62%] sm:top-[68%] left-1/2 -translate-x-1/2 pointer-events-none z-[9995] flex flex-col items-center gap-4 w-full max-w-[500px] px-6"
+      {/* Enter Button + Verse — positioned lower on mobile so it clears the logo */}
+      <motion.div
+        className="absolute bottom-[12%] sm:bottom-[14%] md:top-[68%] left-1/2 -translate-x-1/2 pointer-events-none z-[9995] flex flex-col items-center gap-3 w-full max-w-[420px] px-6"
         animate={{ opacity: isOpen ? 0 : 1, scale: isOpen ? 1.1 : 1 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Enter Button */}
         {active || progress < 100 ? (
-          <div className="font-sans text-[11px] sm:text-[13px] tracking-[0.4em] text-[var(--faded)] px-8 sm:px-12 py-4 sm:py-5 uppercase animate-pulse">
+          <div className="font-sans text-[11px] tracking-[0.4em] text-[var(--faded)] px-8 py-4 uppercase animate-pulse">
             FORMING COVENANT... {Math.round(progress)}%
           </div>
         ) : (
           <motion.button
             onClick={handleEnter}
-            animate={{ 
+            animate={{
               boxShadow: ["0 0 10px rgba(255,255,255,0.02)", "0 0 40px rgba(255,255,255,0.15)", "0 0 10px rgba(255,255,255,0.02)"],
-              color: ["rgba(255,238,221,0.6)", "rgba(255,238,221,1)", "rgba(255,238,221,0.6)"]
+              color: ["rgba(255,238,221,0.6)", "rgba(255,238,221,1)", "rgba(255,238,221,0.6)"],
             }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-auto bg-[var(--void)] border border-[var(--whisper)]/40 font-sans text-[11px] sm:text-[13px] tracking-[0.3em] sm:tracking-[0.4em] uppercase px-8 sm:px-12 py-4 sm:py-5 hover:bg-[var(--bone)] hover:!text-[var(--void)] transition-all duration-700 cursor-pointer"
+            className="pointer-events-auto bg-[var(--void)] border border-[var(--whisper)]/40 font-sans text-[11px] sm:text-[13px] tracking-[0.3em] sm:tracking-[0.4em] uppercase px-8 sm:px-12 py-4 sm:py-5 hover:bg-[var(--bone)] hover:!text-[var(--void)] transition-all duration-700 cursor-pointer w-full max-w-[280px] sm:w-auto"
           >
             ENTER SANCTUARY
           </motion.button>
         )}
 
-        {/* Divider */}
-        <div className="w-[1px] h-4 bg-[var(--whisper)]/30" />
+        <div className="w-[1px] h-3 bg-[var(--whisper)]/30" />
 
-        {/* Daily Verse */}
         <motion.div
-          className="text-center px-2"
+          className="text-center"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.5, delay: 0.5 }}
