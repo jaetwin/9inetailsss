@@ -8,9 +8,9 @@ interface Room2Props {
 }
 
 const FALLBACK_PRODUCTS = [
-  { id: 1, name: "CROWN OF THORNS HOODIE", price: "$64", rot: -2 },
-  { id: 2, name: "R.E.K.O.E. TEE",         price: "$25", rot: 1.5 },
-  { id: 3, name: "DRY BONES THERMAL",       price: "$60", rot: -1 },
+  { id: 1, displayIndex: 1, name: "CROWN OF THORNS HOODIE", price: "$64", rot: -2 },
+  { id: 2, displayIndex: 2, name: "R.E.K.O.E. TEE",         price: "$25", rot: 1.5 },
+  { id: 3, displayIndex: 3, name: "DRY BONES THERMAL",       price: "$60", rot: -1 },
 ];
 
 const ROTS = [-2, 1.5, -1, 2, -1.5, 1];
@@ -25,7 +25,8 @@ function shopifyToDisplayProduct(p: ShopifyProduct, idx: number) {
   }).format(Number(amount));
 
   return {
-    id: idx + 1,
+    id: p.id,                    // stable Shopify ID — ensures the correct product always opens
+    displayIndex: idx + 1,       // used only for the "ITEM 001" style label
     name: p.title.toUpperCase(),
     price,
     rot: ROTS[idx % ROTS.length],
@@ -113,7 +114,7 @@ function ProductCard({ p, idx, isMobile, onProductClick }: {
           <div className="relative z-10 flex flex-col justify-between h-full p-6 md:p-12">
             <div className="flex justify-between items-start">
               <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.1em] uppercase transition-colors duration-300 group-hover:text-[var(--bone)]">
-                ITEM {String(p.id).padStart(3, '0')}
+                ITEM {String(p.displayIndex).padStart(3, '0')}
               </div>
               <div className="w-7 h-7 md:w-8 md:h-8 rounded-full border border-[var(--whisper)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
                 <span className="text-[14px] font-sans">+</span>
