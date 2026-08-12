@@ -162,38 +162,38 @@ export default function Checkout() {
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col h-full"
     >
-      <h2 className="font-gothic text-[clamp(40px,5vw,70px)] text-[var(--bone)] tracking-normal mb-8 border-b border-[var(--whisper)]/30 pb-4 shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
+      <h2 className="font-gothic text-[clamp(36px,5vw,70px)] text-[var(--bone)] tracking-normal mb-6 md:mb-8 border-b border-[var(--whisper)]/30 pb-4 shadow-[0_2px_10px_rgba(0,0,0,0.5)]">
         Cart Review
       </h2>
 
-      <div className="flex-1 overflow-y-auto pr-4 space-y-6 no-scrollbar relative z-10">
+      <div className="flex-1 overflow-y-auto pr-1 md:pr-4 space-y-4 md:space-y-6 no-scrollbar relative z-10">
         {cartItems.length === 0 ? (
           <div className="text-[var(--faded)] font-sans text-[14px] tracking-[0.2em] italic uppercase">
             Your offering is empty.
           </div>
         ) : (
-          cartItems.map(item => (
-            <div key={item.id} className="flex justify-between items-center border border-[var(--whisper)]/20 p-6 bg-[var(--void)]/40 backdrop-blur-md group hover:border-[var(--bone)]/50 transition-colors duration-500 shadow-lg">
+          cartItems.map((item, idx) => (
+            <div key={item.id} className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center border border-[var(--whisper)]/20 p-4 md:p-6 bg-[var(--void)]/40 backdrop-blur-md group hover:border-[var(--bone)]/50 transition-colors duration-500 shadow-lg">
               <div>
-                <div className="font-sans text-[12px] text-[var(--blood)] tracking-[0.3em] mb-2 uppercase">
-                  ITEM 00{item.id}
+                <div className="font-sans text-[10px] md:text-[12px] text-[var(--blood)] tracking-[0.3em] mb-1 md:mb-2 uppercase">
+                  ITEM {String(item.displayIndex ?? idx + 1).padStart(3, '0')}
                 </div>
-                <div className="font-bebas text-[32px] tracking-[0.05em] text-[var(--bone)] group-hover:text-white transition-colors duration-500 uppercase">
+                <div className="font-bebas text-[24px] md:text-[32px] tracking-[0.05em] text-[var(--bone)] group-hover:text-white transition-colors duration-500 uppercase leading-tight">
                   {item.name}
                 </div>
               </div>
-              <div className="flex items-center gap-8">
-                <div className="flex items-center gap-4 font-sans text-[18px]">
-                  <button onClick={() => updateQuantity(item.id, -1)} className="text-[var(--faded)] hover:text-[var(--blood)] transition-colors duration-300 px-2 py-1 cursor-pointer">−</button>
-                  <span className="text-[var(--bone)]">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)} className="text-[var(--faded)] hover:text-[var(--gold)] transition-colors duration-300 px-2 py-1 cursor-pointer">+</button>
+              <div className="flex items-center justify-between gap-4 md:gap-8 flex-wrap">
+                <div className="flex items-center gap-3 md:gap-4 font-sans text-[16px] md:text-[18px]">
+                  <button onClick={() => updateQuantity(item.id, -1)} className="text-[var(--faded)] hover:text-[var(--blood)] transition-colors duration-300 px-2 py-1 min-w-[36px] min-h-[36px] cursor-pointer">−</button>
+                  <span className="text-[var(--bone)] min-w-[16px] text-center">{item.quantity}</span>
+                  <button onClick={() => updateQuantity(item.id, 1)} className="text-[var(--faded)] hover:text-[var(--gold)] transition-colors duration-300 px-2 py-1 min-w-[36px] min-h-[36px] cursor-pointer">+</button>
                 </div>
-                <div className="font-sans text-[20px] tracking-[0.1em] text-[var(--bone)] w-[100px] text-right">
+                <div className="font-sans text-[16px] md:text-[20px] tracking-[0.1em] text-[var(--bone)] text-right">
                   ${item.price * item.quantity}
                 </div>
                 <button
                   onClick={() => removeFromCart(item.id)}
-                  className="text-[var(--faded)] hover:text-[var(--blood)] font-sans text-[11px] tracking-[0.2em] transition-colors duration-300 uppercase underline decoration-[var(--whisper)]/30 underline-offset-4 cursor-pointer"
+                  className="text-[var(--faded)] hover:text-[var(--blood)] font-sans text-[10px] md:text-[11px] tracking-[0.2em] transition-colors duration-300 uppercase underline decoration-[var(--whisper)]/30 underline-offset-4 cursor-pointer"
                 >
                   REMOVE
                 </button>
@@ -203,15 +203,15 @@ export default function Checkout() {
         )}
       </div>
 
-      <div className="mt-8 pt-6 border-t border-[var(--whisper)]/30 flex justify-between items-end relative z-10">
+      <div className="mt-6 md:mt-8 pt-6 border-t border-[var(--whisper)]/30 flex justify-between items-end relative z-10">
         <div>
-          <div className="font-sans text-[12px] text-[var(--faded)] tracking-[0.2em] mb-2 uppercase">SUBTOTAL</div>
-          <div className="font-bebas text-[48px] text-[var(--bone)] tracking-[0.05em] leading-none">${cartTotal}</div>
+          <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.2em] mb-2 uppercase">SUBTOTAL</div>
+          <div className="font-bebas text-[36px] md:text-[48px] text-[var(--bone)] tracking-[0.05em] leading-none">${cartTotal}</div>
         </div>
         <button
           disabled={cartItems.length === 0 || redirecting}
           onClick={handleCheckout}
-          className="bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[14px] tracking-[0.3em] px-10 py-5 hover:bg-[var(--gold)] transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed uppercase shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] cursor-pointer"
+          className="bg-[var(--bone)] text-[var(--void)] font-sans font-bold text-[12px] md:text-[14px] tracking-[0.3em] px-6 md:px-10 py-4 md:py-5 hover:bg-[var(--gold)] transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed uppercase shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] cursor-pointer"
         >
           {redirecting ? 'PREPARING...' : 'CHECKOUT'}
         </button>
@@ -253,7 +253,7 @@ export default function Checkout() {
       >
         <div className="absolute inset-0 bg-[var(--void)]/80 backdrop-blur-2xl" onClick={handleClose} />
 
-        <div className="w-[95vw] max-w-[1000px] h-[85vh] md:h-[80vh] bg-[var(--abyss)] border border-[var(--iron)] p-8 md:p-14 relative overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.9)]">
+        <div className="w-[95vw] max-w-[1000px] h-[85vh] md:h-[80vh] bg-[var(--abyss)] border border-[var(--iron)] p-5 md:p-14 relative overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.9)]">
 
           {/* Marble texture */}
           <div
@@ -264,10 +264,10 @@ export default function Checkout() {
 
           {/* Close button */}
           <div
-            className="absolute top-8 right-8 z-[10030] cursor-pointer group p-4 border border-transparent hover:border-[var(--whisper)]/30 hover:bg-[var(--void)]/50 transition-all duration-500"
+            className="absolute top-5 right-5 md:top-8 md:right-8 z-[10030] cursor-pointer group p-3 md:p-4 border border-transparent hover:border-[var(--whisper)]/30 hover:bg-[var(--void)]/50 transition-all duration-500"
             onClick={handleClose}
           >
-            <div className="font-sans text-[13px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--blood)] transition-colors uppercase">
+            <div className="font-sans text-[12px] md:text-[13px] text-[var(--bone)] tracking-[0.2em] group-hover:text-[var(--blood)] transition-colors uppercase">
               ABORT
             </div>
           </div>
