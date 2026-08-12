@@ -152,8 +152,8 @@ export default function App() {
                 <ambientLight intensity={0.10} color="#ffffff" />
                 <ScrollControls
                   pages={9.5}
-                  damping={isMobile ? 0.3 : 0.15}
-                  distance={1.2}
+                  damping={isMobile ? 0.12 : 0.15}
+                  distance={isMobile ? 1 : 1.2}
                   enabled={showRoom2}
                 >
                   <Scene3D />
