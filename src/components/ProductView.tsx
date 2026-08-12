@@ -173,7 +173,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 ← RETURN
               </button>
               <div className="font-sans text-[11px] text-[var(--blood)] tracking-[0.2em] uppercase">
-                ITEM // {String(product.id).padStart(3, '0')}
+                ITEM // {String(product.displayIndex).padStart(3, '0')}
               </div>
               {(isSoldOut || isLowStock) && (
                 <div className={`font-sans text-[9px] tracking-[0.15em] uppercase px-2 py-1 border ${isSoldOut ? 'border-[var(--whisper)]/30 text-[var(--faded)]' : 'border-[var(--blood)]/50 text-[var(--blood)]'}`}>
@@ -368,7 +368,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
               {/* Right: details */}
               <div className="w-1/2 flex flex-col justify-center items-start text-left">
-                <div className="font-sans text-[13px] text-[var(--blood)] tracking-[0.3em] mb-4 uppercase">ITEM // {String(product.id).padStart(3, '0')}</div>
+                <div className="font-sans text-[13px] text-[var(--blood)] tracking-[0.3em] mb-4 uppercase">ITEM // {String(product.displayIndex).padStart(3, '0')}</div>
                 <h2 className="font-bebas text-[clamp(50px,6vw,100px)] text-[var(--bone)] leading-[0.85] tracking-[0.02em] uppercase mb-8">{productName}</h2>
                 <div className="w-12 h-[1px] bg-[var(--whisper)] mb-8" />
 
