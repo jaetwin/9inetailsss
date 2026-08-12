@@ -269,7 +269,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                       return (
                         <button key={color} onClick={() => { setSelectedColor(color); setSelectedSize(null); }} disabled={!avail}
                           title={color}
-                          className={`relative w-7 h-7 rounded-full border-2 transition-all duration-200 ${selectedColor === color ? 'border-[var(--bone)] scale-110' : 'border-[var(--whisper)]/30'} ${!avail ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
+                          className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedColor === color ? 'border-[var(--bone)] scale-110' : 'border-[var(--whisper)]/30'} ${!avail ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
                           style={{ backgroundColor: colorToCSS(color) }}>
                           {!avail && <div className="absolute inset-0 flex items-center justify-center"><div className="w-full h-[1px] bg-[var(--faded)] rotate-45" /></div>}
                         </button>
@@ -291,7 +291,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                       const avail = sv?.availableForSale ?? true;
                       return (
                         <button key={size} onClick={() => avail && setSelectedSize(size)} disabled={!avail}
-                          className={`px-3 py-2 font-sans text-[11px] tracking-[0.1em] uppercase border transition-all duration-200 min-w-[44px] ${selectedSize === size ? 'bg-[var(--bone)] text-[var(--void)] border-[var(--bone)]' : !avail ? 'border-[var(--whisper)]/20 text-[var(--faded)]/40 cursor-not-allowed line-through' : 'bg-transparent text-[var(--bone)] border-[var(--whisper)]/40'}`}>
+                          className={`px-4 py-3 font-sans text-[11px] tracking-[0.1em] uppercase border transition-all duration-200 min-w-[48px] min-h-[44px] ${selectedSize === size ? 'bg-[var(--bone)] text-[var(--void)] border-[var(--bone)]' : !avail ? 'border-[var(--whisper)]/20 text-[var(--faded)]/40 cursor-not-allowed line-through' : 'bg-transparent text-[var(--bone)] border-[var(--whisper)]/40'}`}>
                           {size}
                         </button>
                       );
