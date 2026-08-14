@@ -105,7 +105,8 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
 
   const handleAcquire = () => {
     if (needsSelection || isSoldOut) return;
-    addToCart({ ...product, shopifyVariantId: selectedVariant?.id });
+    const variantLabel = [selectedColor, selectedSize].filter(Boolean).join(' / ') || undefined;
+    addToCart({ ...product, shopifyVariantId: selectedVariant?.id, selectedOptionsLabel: variantLabel });
     handleClose();
     setTimeout(() => setIsCheckoutOpen(true), 400);
   };
