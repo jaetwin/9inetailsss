@@ -173,7 +173,7 @@ export default function Checkout() {
           </div>
         ) : (
           cartItems.map((item, idx) => (
-            <div key={item.id} className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center border border-[var(--whisper)]/20 p-4 md:p-6 bg-[var(--void)]/40 backdrop-blur-md group hover:border-[var(--bone)]/50 transition-colors duration-500 shadow-lg">
+            <div key={`${item.id}-${item.shopifyVariantId ?? 'novariant'}`} className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center border border-[var(--whisper)]/20 p-4 md:p-6 bg-[var(--void)]/40 backdrop-blur-md group hover:border-[var(--bone)]/50 transition-colors duration-500 shadow-lg">
               <div>
                 <div className="font-sans text-[10px] md:text-[12px] text-[var(--blood)] tracking-[0.3em] mb-1 md:mb-2 uppercase">
                   ITEM {String(item.displayIndex ?? idx + 1).padStart(3, '0')}
@@ -181,18 +181,23 @@ export default function Checkout() {
                 <div className="font-bebas text-[24px] md:text-[32px] tracking-[0.05em] text-[var(--bone)] group-hover:text-white transition-colors duration-500 uppercase leading-tight">
                   {item.name}
                 </div>
+                {item.variantLabel && (
+                  <div className="font-sans text-[11px] md:text-[12px] text-[var(--faded)] tracking-[0.15em] uppercase mt-1">
+                    {item.variantLabel}
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between gap-4 md:gap-8 flex-wrap">
                 <div className="flex items-center gap-3 md:gap-4 font-sans text-[16px] md:text-[18px]">
-                  <button onClick={() => updateQuantity(item.id, -1)} className="text-[var(--faded)] hover:text-[var(--blood)] transition-colors duration-300 px-2 py-1 min-w-[36px] min-h-[36px] cursor-pointer">−</button>
+                  <button onClick={() => updateQuantity(item.id, -1, item.shopifyVariantId)} className="text-[var(--faded)] hover:text-[var(--blood)] transition-colors duration-300 px-2 py-1 min-w-[36px] min-h-[36px] cursor-pointer">−</button>
                   <span className="text-[var(--bone)] min-w-[16px] text-center">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)} className="text-[var(--faded)] hover:text-[var(--gold)] transition-colors duration-300 px-2 py-1 min-w-[36px] min-h-[36px] cursor-pointer">+</button>
+                  <button onClick={() => updateQuantity(item.id, 1, item.shopifyVariantId)} className="text-[var(--faded)] hover:text-[var(--gold)] transition-colors duration-300 px-2 py-1 min-w-[36px] min-h-[36px] cursor-pointer">+</button>
                 </div>
                 <div className="font-sans text-[16px] md:text-[20px] tracking-[0.1em] text-[var(--bone)] text-right">
                   ${item.price * item.quantity}
                 </div>
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.id, item.shopifyVariantId)}
                   className="text-[var(--faded)] hover:text-[var(--blood)] font-sans text-[10px] md:text-[11px] tracking-[0.2em] transition-colors duration-300 uppercase underline decoration-[var(--whisper)]/30 underline-offset-4 cursor-pointer"
                 >
                   REMOVE
