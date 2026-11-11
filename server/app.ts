@@ -8,6 +8,7 @@ import { ADMIN_COOKIE, ADMIN_COOKIE_MAX_AGE, adminConfigured, createSession, isV
 import { readImage, saveImage } from './images'
 import { listOrders, recordPendingOrder, recordStripeSession, type OrderAddress, type OrderItem } from './orders'
 import { createProduct, deleteProduct, findProduct, listProducts, updateProduct, validateProduct, type StoredProduct } from './catalogue'
+import { stripeFetch, stripeTaxActive, TAX_CODE_CLOTHING, TAX_CODE_SHIPPING, verifyStripeEvent } from './stripe'
 
 type Env = { Bindings: Record<string, string | undefined> }
 
@@ -22,18 +23,33 @@ type StripeAddress = {
   country?: string | null
 }
 
+type StripeShipping = { name?: string | null; address?: StripeAddress | null } | null
+
 type StripeSession = {
   id?: string
   payment_status?: string
+  amount_subtotal?: number
   amount_total?: number
   currency?: string
+  total_details?: { amount_discount?: number; amount_shipping?: number; amount_tax?: number } | null
   customer_details?: { email?: string | null; name?: string | null } | null
-  shipping_details?: { name?: string | null; address?: StripeAddress | null } | null
-  shipping?: { name?: string | null; address?: StripeAddress | null } | null
-  line_items?: { data?: { description?: string | null; quantity?: number | null; amount_total?: number | null }[] }
+  // Since API version 2025-03-31 the address lives under collected_information;
+  // the two older fields are kept for sessions read with an older version.
+  collected_information?: { shipping_details?: StripeShipping } | null
+  shipping_details?: StripeShipping
+  shipping?: StripeShipping
+  line_items?: {
+    data?: { description?: string | null; quantity?: number | null; amount_subtotal?: number | null; amount_total?: number | null }[]
+  }
 }
 
 const MAX_QUANTITY = 10
+
+// Where Stripe sends a buyer who backs out of checkout: the page they came from.
+const RETURN_PATHS = ['/', '/shop']
+
+// Stripe events that mean a checkout session may have been paid.
+const CHECKOUT_EVENTS = new Set(['checkout.session.completed', 'checkout.session.async_payment_succeeded'])
 
 // Stripe line items carry the size inside the description ("Heavyweight fleece
 // — Size: M"). Split it back out for orders imported without a local snapshot.
@@ -44,7 +60,7 @@ function sizeFromDescription(description: string | null | undefined): string | u
 }
 
 function shippingFrom(session: StripeSession): OrderAddress | null {
-  const details = session.shipping_details ?? session.shipping ?? null
+  const details = session.collected_information?.shipping_details ?? session.shipping_details ?? session.shipping ?? null
   const address = details?.address
   if (!address) return null
   return {
@@ -58,7 +74,43 @@ function shippingFrom(session: StripeSession): OrderAddress | null {
   }
 }
 
+// Item amounts are before tax and discounts; the receipt lists those separately.
+function itemsFrom(session: StripeSession): OrderItem[] {
+  return (session.line_items?.data ?? []).map((line) => ({
+    name: line.description ?? '',
+    size: sizeFromDescription(line.description),
+    quantity: line.quantity ?? 1,
+    amount: (line.amount_subtotal ?? line.amount_total ?? 0) / 100,
+  }))
+}
+
+const isPaid = (session: StripeSession) =>
+  session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
+
 const env = (key: string) => process.env[key]
+
+// Reads a checkout session from Stripe (never from the browser or the webhook
+// body, which could be stale) and saves it as an order.
+async function captureSession(key: string, id: string) {
+  const response = await stripeFetch(key, `checkout/sessions/${id}?expand[]=line_items`)
+  if (!response.ok) return null
+  const session = (await response.json()) as StripeSession
+  const paid = isPaid(session)
+  const shipping = shippingFrom(session)
+  const items = itemsFrom(session)
+  if (session.id) {
+    await recordStripeSession({
+      id: session.id,
+      paid,
+      email: session.customer_details?.email ?? null,
+      customerName: session.customer_details?.name ?? shipping?.name ?? null,
+      total: (session.amount_total ?? 0) / 100,
+      items,
+      shipping,
+    })
+  }
+  return { session, paid, shipping, items }
+}
 
 // The public catalogue is meant to be read by your existing marketing site too,
 // so it answers CORS for an explicit allowlist. Same-origin requests (the shop
@@ -70,11 +122,6 @@ function allowedOrigins(): string[] {
     .filter(Boolean)
   return configured.length ? configured : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5173']
 }
-
-const stripeHeaders = (key: string) => ({
-  authorization: `Bearer ${key}`,
-  'content-type': 'application/x-www-form-urlencoded',
-})
 
 async function requireAdmin(c: Context, next: Next) {
   if (!(await isValidSession(getCookie(c, ADMIN_COOKIE)))) return c.json({ error: 'Sign in first.' }, 401)
@@ -96,12 +143,15 @@ app.use(
 
 app.get('/api/health', (c) => c.json({ ok: true }))
 
-app.get('/api/config', (c) =>
-  c.json({
+app.get('/api/config', async (c) => {
+  const key = env('STRIPE_SECRET_KEY')
+  return c.json({
     adminConfigured: adminConfigured(),
-    paymentsConfigured: Boolean(env('STRIPE_SECRET_KEY')),
-  }),
-)
+    paymentsConfigured: Boolean(key),
+    taxEnabled: key ? await stripeTaxActive(key) : false,
+    webhookConfigured: Boolean(env('STRIPE_WEBHOOK_SECRET')),
+  })
+})
 
 // ── Catalogue ────────────────────────────────────────────────────────────────
 
@@ -206,16 +256,13 @@ app.post('/api/admin/orders/sync', requireAdmin, async (c) => {
   const key = env('STRIPE_SECRET_KEY')
   if (!key) return c.json({ error: 'Add STRIPE_SECRET_KEY before importing orders.', code: 'stripe_not_configured' }, 503)
 
-  const response = await fetch(
-    'https://api.stripe.com/v1/checkout/sessions?limit=50&status=complete&expand[]=data.line_items',
-    { headers: { authorization: `Bearer ${key}` } },
-  )
+  const response = await stripeFetch(key, 'checkout/sessions?limit=50&status=complete&expand[]=data.line_items')
   if (!response.ok) return c.json({ error: 'Stripe did not return your orders.' }, 502)
 
   const body = (await response.json()) as { data?: StripeSession[] }
   let imported = 0
   for (const session of body.data ?? []) {
-    if (!session.id || session.payment_status !== 'paid') continue
+    if (!session.id || !isPaid(session)) continue
     const shipping = shippingFrom(session)
     await recordStripeSession({
       id: session.id,
@@ -224,12 +271,7 @@ app.post('/api/admin/orders/sync', requireAdmin, async (c) => {
       customerName: session.customer_details?.name ?? shipping?.name ?? null,
       total: (session.amount_total ?? 0) / 100,
       shipping,
-      items: (session.line_items?.data ?? []).map((line) => ({
-        name: line.description ?? '',
-        size: sizeFromDescription(line.description),
-        quantity: line.quantity ?? 1,
-        amount: (line.amount_total ?? 0) / 100,
-      })),
+      items: itemsFrom(session),
     })
     imported += 1
   }
@@ -244,8 +286,9 @@ app.post('/api/checkout', async (c) => {
     return c.json({ error: 'Payments are not connected yet. Add STRIPE_SECRET_KEY and try again.', code: 'stripe_not_configured' }, 503)
   }
 
-  const body = await c.req.json<{ items?: IncomingItem[] }>().catch(() => null)
+  const body = await c.req.json<{ items?: IncomingItem[]; returnPath?: unknown }>().catch(() => null)
   if (!body?.items?.length) return c.json({ error: 'Your bag is empty.' }, 400)
+  const returnPath = typeof body.returnPath === 'string' && RETURN_PATHS.includes(body.returnPath) ? body.returnPath : '/shop'
 
   const lines: { product: StoredProduct; quantity: number; option?: string }[] = []
   for (const item of body.items) {
@@ -264,33 +307,38 @@ app.post('/api/checkout', async (c) => {
 
   const form = new URLSearchParams()
   let subtotal = 0
-  let index = 0
 
-  for (const { product, quantity, option } of lines) {
+  // Prices are tax-exclusive (US style): Stripe Tax adds tax on top at checkout,
+  // worked out from the shipping address once Tax is active on the account.
+  lines.forEach(({ product, quantity, option }, index) => {
     subtotal += product.price * quantity
     const prefix = `line_items[${index}]`
     form.set(`${prefix}[quantity]`, String(quantity))
     form.set(`${prefix}[price_data][currency]`, 'usd')
     form.set(`${prefix}[price_data][unit_amount]`, String(Math.round(product.price * 100)))
+    form.set(`${prefix}[price_data][tax_behavior]`, 'exclusive')
     form.set(`${prefix}[price_data][product_data][name]`, product.name)
     form.set(
       `${prefix}[price_data][product_data][description]`,
       option && product.options ? `${product.short} — ${product.options.name}: ${option}` : product.short,
     )
+    form.set(`${prefix}[price_data][product_data][tax_code]`, TAX_CODE_CLOTHING)
     form.set(`${prefix}[price_data][product_data][metadata][slug]`, product.slug)
     form.set(`${prefix}[price_data][product_data][metadata][variant]`, option ?? '')
-    index += 1
-  }
+  })
 
-  if (subtotal < FREE_SHIPPING_AT) {
-    const prefix = `line_items[${index}]`
-    form.set(`${prefix}[quantity]`, '1')
-    form.set(`${prefix}[price_data][currency]`, 'usd')
-    form.set(`${prefix}[price_data][unit_amount]`, String(SHIPPING_FLAT * 100))
-    form.set(`${prefix}[price_data][product_data][name]`, 'Shipping')
-    form.set(`${prefix}[price_data][product_data][description]`, `Flat rate, free over $${FREE_SHIPPING_AT}`)
-    index += 1
-  }
+  // Shipping is a shipping rate, not a line item, so Stripe Tax can apply each
+  // state's own rule for taxing delivery charges.
+  const shippingCost = subtotal < FREE_SHIPPING_AT ? SHIPPING_FLAT : 0
+  const rate = 'shipping_options[0][shipping_rate_data]'
+  form.set(`${rate}[type]`, 'fixed_amount')
+  form.set(`${rate}[display_name]`, shippingCost ? `Standard shipping (free over $${FREE_SHIPPING_AT})` : 'Free shipping')
+  form.set(`${rate}[fixed_amount][amount]`, String(shippingCost * 100))
+  form.set(`${rate}[fixed_amount][currency]`, 'usd')
+  form.set(`${rate}[tax_behavior]`, 'exclusive')
+  form.set(`${rate}[tax_code]`, TAX_CODE_SHIPPING)
+
+  if (await stripeTaxActive(key)) form.set('automatic_tax[enabled]', 'true')
 
   const orderItems: OrderItem[] = lines.map(({ product, quantity, option }) => ({
     slug: product.slug,
@@ -299,22 +347,19 @@ app.post('/api/checkout', async (c) => {
     quantity,
     amount: product.price * quantity,
   }))
-  const orderTotal = subtotal + (subtotal < FREE_SHIPPING_AT ? SHIPPING_FLAT : 0)
+  // Before tax; replaced by Stripe's final total once the order is paid.
+  const orderTotal = subtotal + shippingCost
 
   const origin = new URL(c.req.url).origin
   form.set('mode', 'payment')
   form.set('success_url', `${origin}/order/confirmed?session_id={CHECKOUT_SESSION_ID}`)
-  form.set('cancel_url', `${origin}/checkout`)
+  form.set('cancel_url', `${origin}${returnPath}`)
   form.set('allow_promotion_codes', 'true')
   form.set('billing_address_collection', 'auto')
   form.set('metadata[brand]', '9inetailss')
   SHIPPING_COUNTRIES.forEach((country, i) => form.set(`shipping_address_collection[allowed_countries][${i}]`, country))
 
-  const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-    method: 'POST',
-    headers: stripeHeaders(key),
-    body: form,
-  })
+  const response = await stripeFetch(key, 'checkout/sessions', { method: 'POST', body: form })
   const session = (await response.json()) as StripeSession & { url?: string; error?: { message?: string } }
 
   if (!response.ok || !session.url) {
@@ -336,36 +381,43 @@ app.get('/api/orders/session', async (c) => {
   const id = c.req.query('id') ?? ''
   if (!/^cs_[A-Za-z0-9_]+$/.test(id)) return c.json({ error: 'Unknown order.' }, 400)
 
-  const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${id}?expand[]=line_items`, {
-    headers: { authorization: `Bearer ${key}` },
+  // The buyer landing here is one of two ways an order is marked paid; the
+  // webhook below is the other, for buyers who close the tab first.
+  const captured = await captureSession(key, id)
+  if (!captured) return c.json({ error: 'Unknown order.' }, 404)
+
+  const { session, paid, shipping, items } = captured
+  const cents = (value: number | undefined) => (value ?? 0) / 100
+  return c.json({
+    paid,
+    email: session.customer_details?.email ?? null,
+    subtotal: cents(session.amount_subtotal),
+    discount: cents(session.total_details?.amount_discount),
+    shippingCost: cents(session.total_details?.amount_shipping),
+    tax: cents(session.total_details?.amount_tax),
+    total: cents(session.amount_total),
+    shipping,
+    items,
   })
-  if (!response.ok) return c.json({ error: 'Unknown order.' }, 404)
+})
 
-  const session = (await response.json()) as StripeSession
-  const paid = session.payment_status === 'paid'
-  const shipping = shippingFrom(session)
-  const stripeItems: OrderItem[] = (session.line_items?.data ?? []).map((line) => ({
-    name: line.description ?? '',
-    size: sizeFromDescription(line.description),
-    quantity: line.quantity ?? 1,
-    amount: (line.amount_total ?? 0) / 100,
-  }))
+// Stripe calls this when a checkout finishes (Dashboard → Developers → Webhooks,
+// events checkout.session.completed and checkout.session.async_payment_succeeded).
+// It marks the order paid even if the buyer never comes back to the site.
+app.post('/api/stripe/webhook', async (c) => {
+  const key = env('STRIPE_SECRET_KEY')
+  const secret = env('STRIPE_WEBHOOK_SECRET')
+  if (!key || !secret) return c.json({ error: 'Add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET first.' }, 503)
 
-  // This is the reliable moment to capture a paid order: Stripe has redirected
-  // the buyer here, and the session carries the shipping address it collected.
-  if (session.id) {
-    await recordStripeSession({
-      id: session.id,
-      paid,
-      email: session.customer_details?.email ?? null,
-      customerName: session.customer_details?.name ?? shipping?.name ?? null,
-      total: (session.amount_total ?? 0) / 100,
-      items: stripeItems,
-      shipping,
-    })
+  const event = verifyStripeEvent(await c.req.text(), c.req.header('stripe-signature'), secret)
+  if (!event) return c.json({ error: 'Invalid signature.' }, 400)
+
+  const object = event.data?.object
+  if (CHECKOUT_EVENTS.has(event.type) && object?.object === 'checkout.session' && object.id) {
+    // A non-2xx answer makes Stripe retry the event later.
+    if (!(await captureSession(key, object.id))) return c.json({ error: 'Could not read that checkout session.' }, 500)
   }
-
-  return c.json({ paid, email: session.customer_details?.email ?? null, total: (session.amount_total ?? 0) / 100, shipping, items: stripeItems })
+  return c.json({ received: true })
 })
 
 app.post('/api/newsletter', async (c) => {

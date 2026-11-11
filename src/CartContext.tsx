@@ -99,7 +99,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return { slug: String(item.id), option: option || undefined, quantity: item.quantity };
     });
     if (items.length === 0) return false;
-    const checkoutUrl = await createCheckoutSession(items);
+    const checkoutUrl = await createCheckoutSession(items, window.location.pathname);
     if (!checkoutUrl) return false;
     window.location.href = checkoutUrl;
     return true;

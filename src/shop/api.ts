@@ -79,13 +79,16 @@ export interface CheckoutLine {
   quantity: number
 }
 
-/** Creates a Stripe Checkout session and returns its URL. */
-export async function createCheckoutSession(items: CheckoutLine[]): Promise<string | null> {
+/**
+ * Creates a Stripe Checkout session and returns its URL. `returnPath` is the
+ * page Stripe sends the buyer back to if they cancel ('/' or '/shop').
+ */
+export async function createCheckoutSession(items: CheckoutLine[], returnPath?: string): Promise<string | null> {
   try {
     const response = await fetch(`${API_BASE}/api/checkout`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, returnPath }),
     })
     const body = (await response.json().catch(() => ({}))) as { url?: string; error?: string }
     if (!response.ok || !body.url) {

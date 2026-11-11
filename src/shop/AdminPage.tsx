@@ -203,7 +203,12 @@ export default function AdminPage() {
   const [status, setStatus] = useState<'checking' | 'out' | 'in'>('checking')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
-  const [config, setConfig] = useState<{ adminConfigured: boolean; paymentsConfigured: boolean } | null>(null)
+  const [config, setConfig] = useState<{
+    adminConfigured: boolean
+    paymentsConfigured: boolean
+    taxEnabled?: boolean
+    webhookConfigured?: boolean
+  } | null>(null)
 
   const [rows, setRows] = useState<StoredProduct[]>([])
   const [draft, setDraft] = useState<Draft>(emptyDraft())
@@ -461,6 +466,16 @@ export default function AdminPage() {
       {config && !config.paymentsConfigured && (
         <p className="mt-6 border border-[var(--gold)]/40 bg-[var(--ash)]/60 px-4 py-3 font-sans text-[11px] leading-relaxed tracking-[0.05em] text-[var(--parchment)]">
           Checkout is not connected — add STRIPE_SECRET_KEY to take payments.
+        </p>
+      )}
+      {config?.paymentsConfigured && config.taxEnabled === false && (
+        <p className="mt-6 border border-[var(--gold)]/40 bg-[var(--ash)]/60 px-4 py-3 font-sans text-[11px] leading-relaxed tracking-[0.05em] text-[var(--parchment)]">
+          Sales tax is off — checkout charges no tax until Stripe Tax is set up (Stripe Dashboard → Settings → Tax).
+        </p>
+      )}
+      {config?.paymentsConfigured && config.webhookConfigured === false && (
+        <p className="mt-6 border border-[var(--gold)]/40 bg-[var(--ash)]/60 px-4 py-3 font-sans text-[11px] leading-relaxed tracking-[0.05em] text-[var(--parchment)]">
+          No Stripe webhook yet — an order only shows as paid when the buyer returns to the site. Add STRIPE_WEBHOOK_SECRET.
         </p>
       )}
       {notice && (

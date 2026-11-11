@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT NOT NULL DEFAULT 'pending',
   email TEXT,
   customer_name TEXT,
-  total INTEGER NOT NULL DEFAULT 0,
+  total NUMERIC(10,2) NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'usd',
   items TEXT NOT NULL DEFAULT '[]',
   shipping TEXT,
@@ -115,6 +115,18 @@ async function migrate(db: Db) {
   await db.run(SCHEMA)
   await db.run(IMAGES_SCHEMA)
   await db.run(ORDERS_SCHEMA)
+  await widenOrderTotal(db)
+}
+
+// Order totals used to be INTEGER, which Postgres rejects once tax or a promo
+// code puts cents in the total. SQLite stores any number in any column, so only
+// an existing Postgres table needs changing.
+async function widenOrderTotal(db: Db) {
+  if (db.dialect !== 'postgres') return
+  const rows = await db.query<{ data_type: string }>(
+    "SELECT data_type FROM information_schema.columns WHERE table_name = 'orders' AND column_name = 'total'",
+  )
+  if (rows[0]?.data_type === 'integer') await db.run('ALTER TABLE orders ALTER COLUMN total TYPE NUMERIC(10,2)')
 }
 
 async function seedIfEmpty(db: Db) {
