@@ -29,6 +29,7 @@ type Row = {
   colors?: string | null
   tapstitch_id?: string | null
   tapstitch_code?: string | null
+  images?: string | null
 }
 
 function parseList(value: string | null | undefined): string[] {
@@ -80,6 +81,8 @@ function toProduct(row: Row): StoredProduct {
   const values = parseList(row.option_values)
   const details = parseList(row.details)
   const colors = parseColors(row.colors)
+  // Pieces saved before multi-photo support only have `image`.
+  const images = parseList(row.images)
   return {
     slug: row.slug,
     name: row.name,
@@ -87,6 +90,7 @@ function toProduct(row: Row): StoredProduct {
     compareAt: row.compare_at === null || row.compare_at === undefined ? undefined : Number(row.compare_at),
     category: row.category as Category,
     image: row.image,
+    images: images.length ? images : row.image ? [row.image] : [],
     badge: (row.badge as Product['badge']) ?? undefined,
     short: row.short,
     description: row.description,
@@ -136,6 +140,7 @@ export interface ProductInput {
   compareAt?: number
   category: Category
   image: string
+  images: string[]
   badge?: (typeof BADGES)[number]
   short: string
   description: string
@@ -180,10 +185,14 @@ export function validateProduct(body: unknown): Validation {
   const category = text(input.category, 40)
   if (!CATEGORY_KEYS.includes(category as Category)) return { ok: false, error: 'Pick a category.' }
 
-  // Artwork is optional: a piece can be listed before the photos exist, and the
-  // storefront renders its own placeholder for it.
-  const image = text(input.image, 1000)
-  if (image && !/^(https?:\/\/|\/)/.test(image)) return { ok: false, error: 'Image must be a full https URL or a path starting with /.' }
+  // Photos are optional: a piece can be listed before they exist, and the
+  // storefront renders its own placeholder. Older clients send one `image`.
+  const rawImages = Array.isArray(input.images) ? input.images : [input.image]
+  const images = [...new Set(rawImages.map((value) => text(value, 1000)).filter(Boolean))].slice(0, 12)
+  if (images.some((url) => !/^(https?:\/\/|\/)/.test(url))) {
+    return { ok: false, error: 'Images must be full https URLs or paths starting with /.' }
+  }
+  const image = images[0] ?? ''
 
   const compareAtRaw = Number(input.compareAt)
   const compareAt = Number.isFinite(compareAtRaw) && compareAtRaw > price ? Math.round(compareAtRaw) : undefined
@@ -211,6 +220,7 @@ export function validateProduct(body: unknown): Validation {
       compareAt,
       category: category as Category,
       image,
+      images,
       badge,
       short: text(input.short, 120),
       description: text(input.description, 4000),
@@ -233,7 +243,7 @@ async function nextPosition(): Promise<number> {
 }
 
 const COLUMN_LIST =
-  'slug, name, price, compare_at, category, image, badge, short, description, details, materials, option_name, option_values, default_option, featured, published, colors, tapstitch_id, tapstitch_code'
+  'slug, name, price, compare_at, category, image, badge, short, description, details, materials, option_name, option_values, default_option, featured, published, colors, tapstitch_id, tapstitch_code, images'
 
 function columns(value: ProductInput, tapstitch: Product['tapstitch'] | undefined) {
   return [
@@ -256,13 +266,14 @@ function columns(value: ProductInput, tapstitch: Product['tapstitch'] | undefine
     value.colors?.length ? JSON.stringify(value.colors) : null,
     tapstitch?.designId ?? null,
     tapstitch?.productCode ?? null,
+    value.images.length ? JSON.stringify(value.images) : null,
   ]
 }
 
 async function insertProduct(value: ProductInput, tapstitch?: Product['tapstitch']) {
   const db = await getDb()
   await db.run(
-    `INSERT INTO products (${COLUMN_LIST}, position, created_at) VALUES (${Array(21).fill('?').join(', ')})`,
+    `INSERT INTO products (${COLUMN_LIST}, position, created_at) VALUES (${Array(22).fill('?').join(', ')})`,
     [...columns(value, tapstitch), await nextPosition(), Date.now()],
   )
 }
@@ -395,6 +406,7 @@ export async function importTapstitchDesigns(
         price: 0,
         category: guessCategory(design.name),
         image: '',
+        images: [],
         short: '',
         description: '',
         details: [],

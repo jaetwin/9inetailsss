@@ -121,9 +121,9 @@ export default function Checkout() {
     // A failed checkout must never look like a completed sale: if Stripe can't
     // create the session, keep the cart and say so.
     const run = async () => {
-      const started = await goToShopifyCheckout();
-      if (!started) {
-        setCheckoutError('Checkout is unavailable right now. Please try again.');
+      const error = await goToShopifyCheckout();
+      if (error) {
+        setCheckoutError(error);
         setRedirecting(false);
       }
     };

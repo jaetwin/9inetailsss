@@ -10,6 +10,7 @@ export interface ApiProduct {
   compareAt?: number
   category: string
   image: string
+  images?: string[]
   badge?: 'New' | 'Bestseller' | 'Low stock'
   short: string
   description: string
@@ -77,7 +78,11 @@ export function toDisplayProduct(product: ApiProduct, index: number) {
     image: product.image,
     // An empty URL would render as a broken <img> with visible alt text; a piece
     // without artwork should simply have no images.
-    images: { edges: product.image ? [{ node: { url: product.image, altText: product.name } }] : [] },
+    images: {
+      edges: (product.images?.length ? product.images : product.image ? [product.image] : []).map((url) => ({
+        node: { url, altText: product.name },
+      })),
+    },
     variants: { edges: variants.map((node) => ({ node })) },
     defaultOption: product.defaultOption,
     colorSwatches: Object.fromEntries(colors.filter((c) => c.swatch).map((c) => [c.name, c.swatch!])) as Record<string, string>,
@@ -95,7 +100,10 @@ export interface CheckoutLine {
  * Creates a Stripe Checkout session and returns its URL. `returnPath` is the
  * page Stripe sends the buyer back to if they cancel ('/' or '/shop').
  */
-export async function createCheckoutSession(items: CheckoutLine[], returnPath?: string): Promise<string | null> {
+export async function createCheckoutSession(
+  items: CheckoutLine[],
+  returnPath?: string,
+): Promise<{ url?: string; error?: string }> {
   try {
     const response = await fetch(`${API_BASE}/api/checkout`, {
       method: 'POST',
@@ -105,11 +113,12 @@ export async function createCheckoutSession(items: CheckoutLine[], returnPath?: 
     const body = (await response.json().catch(() => ({}))) as { url?: string; error?: string }
     if (!response.ok || !body.url) {
       console.error('Checkout unavailable:', body.error ?? response.status)
-      return null
+      // The server's message says what to fix ("Choose a colour for …").
+      return { error: body.error ?? 'Checkout is unavailable right now. Please try again.' }
     }
-    return body.url
+    return { url: body.url }
   } catch (error) {
     console.error('Checkout request failed:', error)
-    return null
+    return { error: 'Could not reach checkout. Check your connection and try again.' }
   }
 }

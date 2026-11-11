@@ -33,7 +33,10 @@ export interface Product {
   price: number
   compareAt?: number
   category: Category
+  /** Cover photo: always the first of `images`, kept for cards that show one. */
   image: string
+  /** Every photo of the piece, in display order. */
+  images?: string[]
   badge?: 'New' | 'Bestseller' | 'Low stock'
   short: string
   description: string

@@ -18,7 +18,8 @@ interface CartContextType {
   isCheckoutOpen: boolean;
   setIsCheckoutOpen: (val: boolean) => void;
   clearCart: () => void;
-  goToShopifyCheckout: () => Promise<boolean>;
+  /** Redirects to Stripe; resolves to an error message only when that fails. */
+  goToShopifyCheckout: () => Promise<string | null>;
   shopifyEnabled: boolean;
 }
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -98,11 +99,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const [, option, color] = String(item.shopifyVariantId ?? '').split('::');
       return { slug: String(item.id), option: option || undefined, color: color || undefined, quantity: item.quantity };
     });
-    if (items.length === 0) return false;
-    const checkoutUrl = await createCheckoutSession(items, window.location.pathname);
-    if (!checkoutUrl) return false;
-    window.location.href = checkoutUrl;
-    return true;
+    if (items.length === 0) return 'Your bag is empty.';
+    const result = await createCheckoutSession(items, window.location.pathname);
+    if (!result.url) return result.error ?? 'Checkout is unavailable right now. Please try again.';
+    window.location.href = result.url;
+    return null;
   };
   return (
     <CartContext.Provider

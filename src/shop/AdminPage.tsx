@@ -12,6 +12,7 @@ interface StoredProduct {
   compareAt?: number
   category: Category
   image: string
+  images?: string[]
   badge?: 'New' | 'Bestseller' | 'Low stock'
   short: string
   description: string
@@ -80,7 +81,8 @@ type Draft = {
   price: string
   compareAt: string
   category: Category
-  image: string
+  /** All photos in display order; the first is the cover. */
+  images: string[]
   badge: '' | NonNullable<StoredProduct['badge']>
   short: string
   description: string
@@ -101,7 +103,7 @@ const emptyDraft = (): Draft => ({
   price: '',
   compareAt: '',
   category: 'tees',
-  image: '',
+  images: [],
   badge: '',
   short: '',
   description: '',
@@ -122,7 +124,7 @@ const toDraft = (product: StoredProduct): Draft => ({
   price: product.price ? String(product.price) : '',
   compareAt: product.compareAt ? String(product.compareAt) : '',
   category: product.category,
-  image: product.image,
+  images: product.images?.length ? product.images : product.image ? [product.image] : [],
   badge: product.badge ?? '',
   short: product.short,
   description: product.description,
@@ -143,7 +145,8 @@ const toPayload = (draft: Draft) => ({
   price: Number(draft.price),
   compareAt: draft.compareAt ? Number(draft.compareAt) : undefined,
   category: draft.category,
-  image: draft.image,
+  image: draft.images[0] ?? '',
+  images: draft.images,
   badge: draft.badge || undefined,
   short: draft.short,
   description: draft.description,
@@ -545,25 +548,49 @@ export default function AdminPage() {
   const visibleSelected = visible.filter((product) => selected.has(product.slug)).map((product) => product.slug)
   const allVisibleSelected = visible.length > 0 && visibleSelected.length === visible.length
 
-  async function upload(file: File) {
+  const [uploadProgress, setUploadProgress] = useState('')
+  const [dragging, setDragging] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+
+  // Uploads one at a time (each is resized first) and appends them in the
+  // order chosen, so a batch of 6 photos lands as 6 photos in that order.
+  async function uploadFiles(files: File[]) {
+    const pictures = files.filter((file) => file.type.startsWith('image/'))
+    if (!pictures.length) {
+      setUploadError('Drop PNG, JPEG or WebP photos.')
+      return
+    }
     setUploading(true)
     setUploadError('')
-    try {
-      const dataUrl = await prepareImage(file)
-      const response = await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ dataUrl }),
-      })
-      const body = (await response.json().catch(() => ({}))) as { url?: string; error?: string }
-      if (!response.ok || !body.url) throw new Error(body.error ?? 'Could not save that image.')
-      set('image', body.url)
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Could not save that image.')
-    } finally {
-      setUploading(false)
+    const failed: string[] = []
+    for (const [index, file] of pictures.entries()) {
+      setUploadProgress(`Uploading ${index + 1} of ${pictures.length}…`)
+      try {
+        const dataUrl = await prepareImage(file)
+        const response = await fetch('/api/admin/images', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ dataUrl }),
+        })
+        const body = (await response.json().catch(() => ({}))) as { url?: string; error?: string }
+        if (!response.ok || !body.url) throw new Error(body.error ?? 'Could not save that image.')
+        setDraft((current) => ({ ...current, images: [...current.images, body.url!].slice(0, 12) }))
+      } catch (error) {
+        failed.push(`${file.name}: ${error instanceof Error ? error.message : 'could not upload'}`)
+      }
     }
+    setUploading(false)
+    setUploadProgress('')
+    if (failed.length) setUploadError(failed.join(' · '))
   }
+
+  const moveImage = (from: number, to: number) =>
+    setDraft((current) => {
+      const images = [...current.images]
+      const [moved] = images.splice(from, 1)
+      images.splice(to, 0, moved)
+      return { ...current, images }
+    })
 
   const shell = (children: React.ReactNode) => (
     <div className="native-cursor min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
@@ -1081,52 +1108,105 @@ export default function AdminPage() {
                   </select>
                 </Field>
                 <div>
-                  <span className={label}>Garment image</span>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label
-                      className={`cursor-pointer border border-[var(--whisper)]/40 px-4 py-3 font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--bone)] transition-colors hover:border-[var(--gold)] ${uploading ? 'pointer-events-none opacity-50' : ''}`}
-                    >
-                      {uploading ? 'Uploading…' : draft.image ? 'Replace image' : 'Upload image'}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        className="hidden"
-                        disabled={uploading}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0]
-                          if (file) void upload(file)
-                          event.target.value = ''
-                        }}
-                      />
-                    </label>
-                    {draft.image && !uploading && (
-                      <button
-                        type="button"
-                        onClick={() => set('image', '')}
-                        className="border border-[var(--whisper)]/40 px-4 py-3 font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:border-[var(--blood)] hover:text-[var(--blood-bright)]"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
+                  <span className={label}>Photos {draft.images.length ? `(${draft.images.length}/12)` : ''}</span>
+                  {/* Drop several photos at once, or click to pick several. */}
+                  <label
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      setDragging(true)
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      setDragging(false)
+                      if (!uploading) void uploadFiles([...event.dataTransfer.files])
+                    }}
+                    className={`flex cursor-pointer flex-col items-center justify-center border border-dashed px-4 py-6 text-center transition-colors ${
+                      dragging ? 'border-[var(--gold)] bg-[var(--gold)]/10' : 'border-[var(--whisper)]/50 hover:border-[var(--gold)]'
+                    } ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+                  >
+                    <span className="font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--bone)]">
+                      {uploading ? uploadProgress : 'Drop photos here or click to choose'}
+                    </span>
+                    <span className="mt-1 font-serif text-[12px] italic text-[var(--faded)]">Several at once is fine. Resized to 1600px.</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(event) => {
+                        const files = [...(event.target.files ?? [])]
+                        event.target.value = ''
+                        if (files.length) void uploadFiles(files)
+                      }}
+                    />
+                  </label>
                   {uploadError && (
                     <p className="mt-2 font-sans text-[11px] tracking-[0.1em] text-[var(--blood-bright)]">{uploadError}</p>
                   )}
-                  <input
-                    className={`${input} mt-2`}
-                    value={draft.image}
-                    onChange={(event) => set('image', event.target.value)}
-                    placeholder="/api/images/… or https://…"
-                  />
-                  <span className="mt-1 block font-serif text-[12px] italic text-[var(--faded)]">
-                    Uploaded photos are resized to 1600px and stored with the catalogue. A Tapstitch URL works too.
-                  </span>
+                  {draft.images.length > 0 && (
+                    <ul className="mt-3 grid grid-cols-3 gap-2">
+                      {draft.images.map((url, index) => (
+                        <li key={url} className="relative aspect-square overflow-hidden border border-[var(--whisper)]/30 bg-[var(--abyss)]">
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                          {index === 0 && (
+                            <span className="absolute left-1 top-1 bg-[var(--void)]/80 px-1.5 py-0.5 font-sans text-[8px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">
+                              Cover
+                            </span>
+                          )}
+                          <span className="absolute inset-x-0 bottom-0 flex justify-between bg-[var(--void)]/75">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => moveImage(index, index - 1)}
+                              aria-label="Move earlier"
+                              className="px-2 py-1 font-sans text-[12px] text-[var(--bone)] disabled:opacity-20"
+                            >
+                              ←
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => set('images', draft.images.filter((_, i) => i !== index))}
+                              aria-label="Remove photo"
+                              className="px-2 py-1 font-sans text-[12px] text-[var(--faded)] hover:text-[var(--blood-bright)]"
+                            >
+                              ×
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === draft.images.length - 1}
+                              onClick={() => moveImage(index, index + 1)}
+                              aria-label="Move later"
+                              className="px-2 py-1 font-sans text-[12px] text-[var(--bone)] disabled:opacity-20"
+                            >
+                              →
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      className={input}
+                      value={imageUrl}
+                      onChange={(event) => setImageUrl(event.target.value)}
+                      placeholder="Or paste an https:// photo link"
+                    />
+                    <button
+                      type="button"
+                      disabled={!/^https?:\/\//.test(imageUrl.trim())}
+                      onClick={() => {
+                        set('images', [...draft.images, imageUrl.trim()].slice(0, 12))
+                        setImageUrl('')
+                      }}
+                      className="border border-[var(--whisper)]/40 px-4 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--bone)] hover:border-[var(--gold)] disabled:opacity-30"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
-                {draft.image && (
-                  <span className="grid h-40 place-items-center overflow-hidden border border-[var(--whisper)]/30 bg-[var(--abyss)]">
-                    <img src={draft.image} alt="" className="h-full w-full object-cover" />
-                  </span>
-                )}
                 <Field title="Badge">
                   <select className={input} value={draft.badge} onChange={(event) => set('badge', event.target.value as Draft['badge'])}>
                     <option value="" className="bg-[var(--void)]">None</option>

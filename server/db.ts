@@ -125,6 +125,7 @@ const PRODUCT_COLUMNS = {
   colors: 'TEXT', // JSON array of ProductColor
   tapstitch_id: 'TEXT', // Tapstitch design ID, for matching re-imports
   tapstitch_code: 'TEXT', // Tapstitch product code, e.g. UT0348
+  images: 'TEXT', // JSON array of photo URLs; the first is also stored in `image`
 }
 
 async function addProductColumns(db: Db) {
