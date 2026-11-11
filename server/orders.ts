@@ -1,4 +1,4 @@
-import { getDb } from './db'
+import { getDb } from './db.js'
 
 // Paid orders, ready to read into Tapstitch by hand. A row is written when a
 // Stripe session is created (so the pieces, sizes and total are recorded before

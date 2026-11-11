@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs'
 
-import { products as seed, type Product } from '../src/data/products'
+import { products as seed, type Product } from '../src/data/products.js'
 
 // One tiny data layer with two drivers: SQLite for local development and Neon
 // Postgres on Vercel. Queries are written once with `?` placeholders; the

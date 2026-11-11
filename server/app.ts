@@ -3,12 +3,12 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { cors } from 'hono/cors'
 import type { Context, Next } from 'hono'
 
-import { FREE_SHIPPING_AT, SHIPPING_FLAT, SHIPPING_COUNTRIES } from '../src/data/products'
-import { ADMIN_COOKIE, ADMIN_COOKIE_MAX_AGE, adminConfigured, createSession, isValidSession, passwordMatches } from './auth'
-import { readImage, saveImage } from './images'
-import { listOrders, recordPendingOrder, recordStripeSession, type OrderAddress, type OrderItem } from './orders'
-import { createProduct, deleteProduct, findProduct, listProducts, updateProduct, validateProduct, type StoredProduct } from './catalogue'
-import { stripeFetch, stripeTaxActive, TAX_CODE_CLOTHING, TAX_CODE_SHIPPING, verifyStripeEvent } from './stripe'
+import { FREE_SHIPPING_AT, SHIPPING_FLAT, SHIPPING_COUNTRIES } from '../src/data/products.js'
+import { ADMIN_COOKIE, ADMIN_COOKIE_MAX_AGE, adminConfigured, createSession, isValidSession, passwordMatches } from './auth.js'
+import { readImage, saveImage } from './images.js'
+import { listOrders, recordPendingOrder, recordStripeSession, type OrderAddress, type OrderItem } from './orders.js'
+import { createProduct, deleteProduct, findProduct, listProducts, updateProduct, validateProduct, type StoredProduct } from './catalogue.js'
+import { stripeFetch, stripeTaxActive, TAX_CODE_CLOTHING, TAX_CODE_SHIPPING, verifyStripeEvent } from './stripe.js'
 
 type Env = { Bindings: Record<string, string | undefined> }
 

@@ -2,7 +2,7 @@ import 'dotenv/config'
 
 import { serve } from '@hono/node-server'
 
-import { app } from './app'
+import { app } from './app.js'
 
 // Local API server. Vite proxies /api here during `npm run dev`.
 const port = Number(process.env.API_PORT ?? 8787)

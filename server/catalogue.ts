@@ -1,5 +1,5 @@
-import { CATEGORY_KEYS, type Category, type Product } from '../src/data/products'
-import { getDb } from './db'
+import { CATEGORY_KEYS, type Category, type Product } from '../src/data/products.js'
+import { getDb } from './db.js'
 
 export type StoredProduct = Product & { published: boolean }
 

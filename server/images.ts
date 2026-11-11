@@ -1,4 +1,4 @@
-import { getDb } from './db'
+import { getDb } from './db.js'
 
 // Garment images live in the same database as the catalogue. Vercel functions
 // have no writable disk and this shop should not need a cloud bucket account,
