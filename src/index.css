@@ -87,6 +87,33 @@
   button, a, [role="button"], [onClick] { cursor: pointer !important; }
 }
 
+/*
+  Flat pages (shop, admin, order receipt) have real form controls, so they keep
+  the system pointer instead of the sanctuary's custom crosshair — which they
+  never mount. Scoped so the 3D walkthrough is untouched.
+*/
+@media (pointer: fine) {
+  .native-cursor,
+  .native-cursor * { cursor: auto !important; }
+
+  .native-cursor a,
+  .native-cursor button,
+  .native-cursor [role="button"],
+  .native-cursor summary,
+  .native-cursor label[for],
+  .native-cursor input[type="checkbox"],
+  .native-cursor input[type="radio"],
+  .native-cursor input[type="file"],
+  .native-cursor input[type="submit"],
+  .native-cursor select { cursor: pointer !important; }
+
+  .native-cursor input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]),
+  .native-cursor textarea { cursor: text !important; }
+
+  .native-cursor :disabled,
+  .native-cursor :disabled * { cursor: not-allowed !important; }
+}
+
 body {
   background-color: var(--void);
   color: var(--bone);

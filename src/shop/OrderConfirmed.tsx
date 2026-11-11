@@ -50,7 +50,7 @@ export default function OrderConfirmed() {
   }, [sessionId])
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
+    <div className="native-cursor min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
       <header className="border-b border-[var(--whisper)]/30">
         <div className="mx-auto flex h-16 max-w-[900px] items-center justify-between px-5">
           <Link to="/" className="font-sans text-[11px] uppercase tracking-[0.3em] text-[var(--faded)] transition-colors hover:text-[var(--bone)]">

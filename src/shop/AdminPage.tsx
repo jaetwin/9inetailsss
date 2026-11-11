@@ -372,7 +372,7 @@ export default function AdminPage() {
   }
 
   const shell = (children: React.ReactNode) => (
-    <div className="min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
+    <div className="native-cursor min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
       <header className="sticky top-0 z-30 border-b border-[var(--whisper)]/30 bg-[var(--void)]/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-3 px-5 md:px-10">
           <Link to="/" className="whitespace-nowrap font-sans text-[10px] uppercase tracking-[0.25em] text-[var(--faded)] transition-colors hover:text-[var(--bone)] sm:text-[11px] sm:tracking-[0.3em]">
