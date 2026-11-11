@@ -16,6 +16,17 @@ export const CATEGORY_LABELS: Record<Category, string> = {
 
 export const SHIPPING_COUNTRIES = ['US', 'CA', 'GB', 'AU', 'DE', 'FR', 'NL', 'SE', 'JP']
 
+/** A colour a piece comes in. Imported from Tapstitch with its own sizes and swatch. */
+export interface ProductColor {
+  name: string
+  /** Tapstitch colour ID, needed when placing the order in Tapstitch. */
+  id?: string
+  /** Sizes made in this colour; empty or missing means every size of the piece. */
+  sizes?: string[]
+  /** Small picture of the garment in this colour (/api/images/… or https). */
+  swatch?: string
+}
+
 export interface Product {
   slug: string
   name: string
@@ -30,6 +41,9 @@ export interface Product {
   materials: string
   options?: { name: string; values: string[] }
   defaultOption?: string
+  colors?: ProductColor[]
+  /** Set on pieces imported from a Tapstitch export. */
+  tapstitch?: { designId: string; productCode: string }
   featured?: boolean
   published?: boolean
 }

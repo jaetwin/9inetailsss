@@ -116,6 +116,29 @@ async function migrate(db: Db) {
   await db.run(IMAGES_SCHEMA)
   await db.run(ORDERS_SCHEMA)
   await widenOrderTotal(db)
+  await addProductColumns(db)
+}
+
+// Columns added after the first release. Nullable, so older code that reads or
+// writes products keeps working against the same database.
+const PRODUCT_COLUMNS = {
+  colors: 'TEXT', // JSON array of ProductColor
+  tapstitch_id: 'TEXT', // Tapstitch design ID, for matching re-imports
+  tapstitch_code: 'TEXT', // Tapstitch product code, e.g. UT0348
+}
+
+async function addProductColumns(db: Db) {
+  if (db.dialect === 'postgres') {
+    // IF NOT EXISTS: two cold starts may run this at the same moment.
+    for (const [name, type] of Object.entries(PRODUCT_COLUMNS)) {
+      await db.run(`ALTER TABLE products ADD COLUMN IF NOT EXISTS ${name} ${type}`)
+    }
+    return
+  }
+  const existing = new Set((await db.query<{ name: string }>('PRAGMA table_info(products)')).map((row) => row.name))
+  for (const [name, type] of Object.entries(PRODUCT_COLUMNS)) {
+    if (!existing.has(name)) await db.run(`ALTER TABLE products ADD COLUMN ${name} ${type}`)
+  }
 }
 
 // Order totals used to be INTEGER, which Postgres rejects once tax or a promo

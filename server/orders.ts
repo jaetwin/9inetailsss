@@ -8,8 +8,11 @@ export interface OrderItem {
   slug?: string
   name: string
   size?: string
+  color?: string
   quantity: number
   amount: number
+  /** For pieces imported from Tapstitch: what to pick when placing the order there. */
+  tapstitch?: { designId: string; productCode: string; colorId?: string }
 }
 
 export interface OrderAddress {

@@ -95,8 +95,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // request can be rebuilt without asking Shopify anything.
   const goToShopifyCheckout = async () => {
     const items = cartItems.map(item => {
-      const [, option] = String(item.shopifyVariantId ?? '').split('::');
-      return { slug: String(item.id), option: option || undefined, quantity: item.quantity };
+      const [, option, color] = String(item.shopifyVariantId ?? '').split('::');
+      return { slug: String(item.id), option: option || undefined, color: color || undefined, quantity: item.quantity };
     });
     if (items.length === 0) return false;
     const checkoutUrl = await createCheckoutSession(items, window.location.pathname);

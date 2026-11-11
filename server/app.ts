@@ -7,12 +7,35 @@ import { FREE_SHIPPING_AT, SHIPPING_FLAT, SHIPPING_COUNTRIES } from '../src/data
 import { ADMIN_COOKIE, ADMIN_COOKIE_MAX_AGE, adminConfigured, createSession, isValidSession, passwordMatches } from './auth.js'
 import { readImage, saveImage } from './images.js'
 import { listOrders, recordPendingOrder, recordStripeSession, type OrderAddress, type OrderItem } from './orders.js'
-import { createProduct, deleteProduct, findProduct, listProducts, updateProduct, validateProduct, type StoredProduct } from './catalogue.js'
+import {
+  createProduct,
+  deleteProduct,
+  findProduct,
+  importedDesigns,
+  importTapstitchDesigns,
+  listProducts,
+  setPublished,
+  updateProduct,
+  validateProduct,
+  type StoredProduct,
+} from './catalogue.js'
 import { stripeFetch, stripeTaxActive, TAX_CODE_CLOTHING, TAX_CODE_SHIPPING, verifyStripeEvent } from './stripe.js'
+import { readTapstitchExport } from './xlsx.js'
 
 type Env = { Bindings: Record<string, string | undefined> }
 
-type IncomingItem = { slug?: unknown; option?: unknown; quantity?: unknown }
+type IncomingItem = { slug?: unknown; option?: unknown; color?: unknown; quantity?: unknown }
+
+// A Tapstitch export is ~200 KB; Vercel caps request bodies at 4.5 MB.
+const MAX_IMPORT_BYTES = 3 * 1024 * 1024
+
+function decodeUpload(file: unknown): Uint8Array {
+  if (typeof file !== 'string' || !file) throw new Error('Choose the .xlsx file Tapstitch exported.')
+  const bytes = Buffer.from(file.replace(/^data:[^,]*,/, ''), 'base64')
+  if (!bytes.length) throw new Error('That file is empty.')
+  if (bytes.length > MAX_IMPORT_BYTES) throw new Error('That file is larger than 3 MB.')
+  return new Uint8Array(bytes)
+}
 
 type StripeAddress = {
   line1?: string | null
@@ -220,6 +243,53 @@ app.delete('/api/products/:slug', requireAdmin, async (c) => {
   return removed ? c.json({ ok: true }) : c.json({ error: 'That product no longer exists.' }, 404)
 })
 
+// Go live / back to draft / remove for several pieces at once.
+app.post('/api/admin/products/bulk', requireAdmin, async (c) => {
+  const body = await c.req.json<{ action?: unknown; slugs?: unknown }>().catch(() => null)
+  const slugs = Array.isArray(body?.slugs) ? body.slugs.filter((s): s is string => typeof s === 'string').slice(0, 500) : []
+  if (!slugs.length) return c.json({ error: 'Select at least one piece.' }, 400)
+
+  if (body?.action === 'publish' || body?.action === 'unpublish') {
+    return c.json(await setPublished(slugs, body.action === 'publish'))
+  }
+  if (body?.action === 'delete') {
+    const removed: string[] = []
+    for (const slug of slugs) if (await deleteProduct(slug)) removed.push(slug)
+    return c.json({ removed })
+  }
+  return c.json({ error: 'Unknown action.' }, 400)
+})
+
+// ── Tapstitch import ─────────────────────────────────────────────────────────
+
+// Reads the export and says, per design, whether it is new or already in the
+// shop. Nothing is saved until the owner confirms with the route below.
+app.post('/api/admin/import/tapstitch/preview', requireAdmin, async (c) => {
+  const body = await c.req.json<{ file?: unknown }>().catch(() => null)
+  try {
+    const designs = readTapstitchExport(decodeUpload(body?.file))
+    const existing = await importedDesigns()
+    return c.json({ designs: designs.map((design) => ({ ...design, existing: existing.get(design.designId) ?? null })) })
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Could not read that file.' }, 400)
+  }
+})
+
+// The file is sent again with the chosen design IDs and read on the server,
+// so what gets saved always comes from the export itself.
+app.post('/api/admin/import/tapstitch', requireAdmin, async (c) => {
+  const body = await c.req.json<{ file?: unknown; designIds?: unknown }>().catch(() => null)
+  const chosen = new Set(Array.isArray(body?.designIds) ? body.designIds.filter((id): id is string => typeof id === 'string') : [])
+  if (!chosen.size) return c.json({ error: 'Select at least one design to import.' }, 400)
+  try {
+    const designs = readTapstitchExport(decodeUpload(body?.file)).filter((design) => chosen.has(design.designId))
+    const result = await importTapstitchDesigns(designs, async (dataUrl) => (await saveImage(dataUrl)).url)
+    return c.json(result)
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Could not import that file.' }, 400)
+  }
+})
+
 // ── Images ───────────────────────────────────────────────────────────────────
 
 app.post('/api/admin/images', requireAdmin, async (c) => {
@@ -290,19 +360,32 @@ app.post('/api/checkout', async (c) => {
   if (!body?.items?.length) return c.json({ error: 'Your bag is empty.' }, 400)
   const returnPath = typeof body.returnPath === 'string' && RETURN_PATHS.includes(body.returnPath) ? body.returnPath : '/shop'
 
-  const lines: { product: StoredProduct; quantity: number; option?: string }[] = []
+  type Line = { product: StoredProduct; quantity: number; option?: string; color?: NonNullable<StoredProduct['colors']>[number] }
+  const lines: Line[] = []
   for (const item of body.items) {
     const slug = typeof item.slug === 'string' ? item.slug : ''
     const product = await findProduct(slug)
-    if (!product || !product.published) return c.json({ error: 'One of the pieces in your bag is no longer available.' }, 400)
+    if (!product || !product.published || product.price < 1) {
+      return c.json({ error: 'One of the pieces in your bag is no longer available.' }, 400)
+    }
     const quantity = Math.trunc(Number(item.quantity))
     if (!Number.isFinite(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
       return c.json({ error: `Quantities must be between 1 and ${MAX_QUANTITY}.` }, 400)
     }
+
+    // A piece with colours needs one, except when it only comes in one.
+    const colors = product.colors ?? []
+    const color = colors.find((entry) => entry.name === item.color) ?? (colors.length === 1 ? colors[0] : undefined)
+    if (colors.length && !color) return c.json({ error: `Choose a colour for ${product.name}.` }, 400)
+
     const option = product.options
       ? product.options.values.find((value) => value === item.option) ?? product.defaultOption ?? product.options.values[0]
       : undefined
-    lines.push({ product, quantity, option })
+    // Tapstitch does not make every size in every colour.
+    if (color?.sizes?.length && option && !color.sizes.includes(option)) {
+      return c.json({ error: `${product.name} in ${color.name} is not made in size ${option}.` }, 400)
+    }
+    lines.push({ product, quantity, option, color })
   }
 
   const form = new URLSearchParams()
@@ -310,7 +393,7 @@ app.post('/api/checkout', async (c) => {
 
   // Prices are tax-exclusive (US style): Stripe Tax adds tax on top at checkout,
   // worked out from the shipping address once Tax is active on the account.
-  lines.forEach(({ product, quantity, option }, index) => {
+  lines.forEach(({ product, quantity, option, color }, index) => {
     subtotal += product.price * quantity
     const prefix = `line_items[${index}]`
     form.set(`${prefix}[quantity]`, String(quantity))
@@ -318,13 +401,15 @@ app.post('/api/checkout', async (c) => {
     form.set(`${prefix}[price_data][unit_amount]`, String(Math.round(product.price * 100)))
     form.set(`${prefix}[price_data][tax_behavior]`, 'exclusive')
     form.set(`${prefix}[price_data][product_data][name]`, product.name)
-    form.set(
-      `${prefix}[price_data][product_data][description]`,
-      option && product.options ? `${product.short} — ${product.options.name}: ${option}` : product.short,
-    )
+    // Shown to the buyer on Stripe's page. Stripe rejects an empty description,
+    // and imported pieces start without a subtitle.
+    const variant = [color && `Color: ${color.name}`, option && product.options && `${product.options.name}: ${option}`].filter(Boolean).join(', ')
+    const description = [product.short, variant].filter(Boolean).join(' — ')
+    if (description) form.set(`${prefix}[price_data][product_data][description]`, description)
     form.set(`${prefix}[price_data][product_data][tax_code]`, TAX_CODE_CLOTHING)
     form.set(`${prefix}[price_data][product_data][metadata][slug]`, product.slug)
     form.set(`${prefix}[price_data][product_data][metadata][variant]`, option ?? '')
+    form.set(`${prefix}[price_data][product_data][metadata][color]`, color?.name ?? '')
   })
 
   // Shipping is a shipping rate, not a line item, so Stripe Tax can apply each
@@ -340,12 +425,17 @@ app.post('/api/checkout', async (c) => {
 
   if (await stripeTaxActive(key)) form.set('automatic_tax[enabled]', 'true')
 
-  const orderItems: OrderItem[] = lines.map(({ product, quantity, option }) => ({
+  // Everything needed to place the order in Tapstitch by hand travels with it.
+  const orderItems: OrderItem[] = lines.map(({ product, quantity, option, color }) => ({
     slug: product.slug,
     name: product.name,
     size: option,
+    color: color?.name,
     quantity,
     amount: product.price * quantity,
+    tapstitch: product.tapstitch
+      ? { designId: product.tapstitch.designId, productCode: product.tapstitch.productCode, colorId: color?.id }
+      : undefined,
   }))
   // Before tax; replaced by Stripe's final total once the order is paid.
   const orderTotal = subtotal + shippingCost

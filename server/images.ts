@@ -38,6 +38,14 @@ export async function saveImage(dataUrl: string): Promise<SavedImage> {
   return { id, url: `/api/images/${id}` }
 }
 
+/** Removes a stored image given its /api/images/… URL; other URLs are ignored. */
+export async function deleteImageByUrl(url: string): Promise<void> {
+  const id = /^\/api\/images\/([a-f0-9]{1,32})$/.exec(url)?.[1]
+  if (!id) return
+  const db = await getDb()
+  await db.run('DELETE FROM images WHERE id = ?', [id])
+}
+
 export async function readImage(id: string): Promise<{ mime: string; bytes: Uint8Array } | null> {
   if (!/^[a-f0-9]{1,32}$/.test(id)) return null
 

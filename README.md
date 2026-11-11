@@ -31,6 +31,35 @@ menu collection and in `/shop`. No deploy.
 - **Featured** marks it for the front of the collection.
 - **Upload image** takes a photo from your phone or computer: it is resized to 1600px in the browser, stored in the database and served from `/api/images/…`. The URL field still accepts a Tapstitch link if you would rather host it there.
 
+## Import from Tapstitch
+
+Tapstitch has no API for custom sites, so designs come in from its export:
+Tapstitch → export designs → `.xlsx`, then `/admin` → **Import from Tapstitch**.
+
+1. The preview lists every design in the file with its colour swatches, sizes
+   and product code. New designs start ticked; untick any you don't want.
+2. **Import** saves the ticked designs as **drafts**: in `/admin`, not in the
+   shop. Each design is one piece with a colour and size choice. The export's
+   64px cover pictures become the colour swatches.
+3. A draft needs a **price** before it can go live (the export has none), and
+   it should get a real photo (the export has none at full size). Use **Edit**.
+4. Tick pieces and choose **Go live**, **Move to drafts** or **Remove**. The
+   tabs filter All / Live / Drafts.
+
+Importing a newer export refreshes the colours, sizes and product code of
+designs already in the shop (matched by Tapstitch design ID). Their name,
+price, photos, description and live/draft state are kept. Remove a piece and
+import again to start it over.
+
+Sizes are kept per colour: Tapstitch does not make every size in every colour,
+and checkout refuses a combination it does not make. Each order line carries
+the Tapstitch product code, colour ID and design link, and **Copy for
+Tapstitch** includes them.
+
+The reader lives in `server/xlsx.ts` (a small zip + XML reader for this one
+export layout: Design Name, Cover, Design URL, Color Name, Color ID, Product
+Code, Size).
+
 ## How it fits together
 
 | Path | Role |

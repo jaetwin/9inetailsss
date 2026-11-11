@@ -17,6 +17,7 @@ export interface ApiProduct {
   materials: string
   options?: { name: string; values: string[] }
   defaultOption?: string
+  colors?: { name: string; id?: string; sizes?: string[]; swatch?: string }[]
   featured?: boolean
   published?: boolean
 }
@@ -43,13 +44,22 @@ const money = (value: number) => `$${value.toFixed(value % 1 === 0 ? 0 : 2)}`
 /** Product in the shape Room2/ProductView/cart already understand. */
 export function toDisplayProduct(product: ApiProduct, index: number) {
   const sizes = product.options?.values ?? []
-  const variants = (sizes.length ? sizes : ['One']).map((size) => ({
-    id: `${product.slug}::${size}`,
-    title: size,
-    availableForSale: true,
-    price: { amount: String(product.price), currencyCode: 'USD' },
-    selectedOptions: sizes.length ? [{ name: product.options!.name, value: size }] : [],
-  }))
+  const colors = product.colors ?? []
+  // One variant per colour × size. Ids are `slug::size` or `slug::size::colour`,
+  // which the cart turns back into a checkout line. A size Tapstitch does not
+  // make in a colour stays listed but unavailable, so the picker greys it out.
+  const variants = (colors.length ? colors : [null]).flatMap((color) =>
+    (sizes.length ? sizes : ['One']).map((size) => ({
+      id: color ? `${product.slug}::${size}::${color.name}` : `${product.slug}::${size}`,
+      title: [color?.name, size].filter(Boolean).join(' / '),
+      availableForSale: !color?.sizes?.length || color.sizes.includes(size),
+      price: { amount: String(product.price), currencyCode: 'USD' },
+      selectedOptions: [
+        ...(color ? [{ name: 'Color', value: color.name }] : []),
+        ...(sizes.length ? [{ name: product.options!.name, value: size }] : []),
+      ],
+    })),
+  )
 
   return {
     id: product.slug,
@@ -70,12 +80,14 @@ export function toDisplayProduct(product: ApiProduct, index: number) {
     images: { edges: product.image ? [{ node: { url: product.image, altText: product.name } }] : [] },
     variants: { edges: variants.map((node) => ({ node })) },
     defaultOption: product.defaultOption,
+    colorSwatches: Object.fromEntries(colors.filter((c) => c.swatch).map((c) => [c.name, c.swatch!])) as Record<string, string>,
   }
 }
 
 export interface CheckoutLine {
   slug: string
   option?: string
+  color?: string
   quantity: number
 }
 
