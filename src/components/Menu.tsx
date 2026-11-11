@@ -3,7 +3,8 @@ import { useToast } from './Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
 import PrayerRequest from './PrayerRequest';
-import { fetchProducts, type ShopifyProduct } from '../lib/shopify';
+import type { ShopifyProduct } from '../lib/shopify';
+import { fetchCatalogue, toDisplayProduct } from '../shop/api';
 
 function shopifyToProduct(p: ShopifyProduct, idx: number) {
   const variant = p.variants.edges[0]?.node;
@@ -40,9 +41,9 @@ export default function Menu({ onProductClick, onOverlayChange }: { onProductCli
   };
 
   useEffect(() => {
-    fetchProducts(250).then(shopifyProducts => {
-      if (shopifyProducts.length > 0) {
-        setProducts(shopifyProducts.map(shopifyToProduct));
+    fetchCatalogue().then(items => {
+      if (items.length > 0) {
+        setProducts(items.map(toDisplayProduct));
       }
     });
   }, []);

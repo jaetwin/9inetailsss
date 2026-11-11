@@ -197,14 +197,18 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                 </div>
               )}
               {/* Main image */}
-              <div className="flex-1 h-full bg-[#111] overflow-hidden relative">
-                <AnimatePresence mode="wait">
-                  <motion.img key={imageUrl} src={imageUrl} alt={imageAlt}
-                    className="absolute inset-0 w-full h-full object-contain"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                  />
-                </AnimatePresence>
+              <div className="flex-1 h-full bg-[#111] overflow-hidden relative flex items-center justify-center">
+                {imageUrl ? (
+                  <AnimatePresence mode="wait">
+                    <motion.img key={imageUrl} src={imageUrl} alt={imageAlt}
+                      className="absolute inset-0 w-full h-full object-contain"
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                    />
+                  </AnimatePresence>
+                ) : (
+                  <div className="font-sans text-[11px] tracking-[0.3em] text-[var(--faded)] uppercase">Image forthcoming</div>
+                )}
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { fetchProducts, type ShopifyProduct } from '../lib/shopify';
+import type { ShopifyProduct } from '../lib/shopify';
+import { fetchCatalogue, toDisplayProduct } from '../shop/api';
 
 interface Room2Props {
   isVisible: boolean;
@@ -149,9 +150,9 @@ export default function Room2({ isVisible, onProductClick }: Room2Props) {
 
   useEffect(() => {
     // Fetch all products — no count cap so new Shopify items appear automatically
-    fetchProducts(250).then(shopifyProducts => {
-      if (shopifyProducts.length > 0) {
-        setProducts(shopifyProducts.map(shopifyToDisplayProduct));
+    fetchCatalogue().then(items => {
+      if (items.length > 0) {
+        setProducts(items.map(toDisplayProduct));
       }
     });
   }, []);

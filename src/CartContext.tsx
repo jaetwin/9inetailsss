@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { createShopifyCheckout, isShopifyConfigured } from './lib/shopify';
+import { createCheckoutSession } from './shop/api';
 export interface CartItem {
-  id: number;
+  id: string | number;
+  displayIndex?: number;
   name: string;
   price: number;
   quantity: number;
@@ -11,13 +12,13 @@ export interface CartItem {
 interface CartContextType {
   cartItems: CartItem[];
   addToCart: (product: any) => void;
-  removeFromCart: (id: number, shopifyVariantId?: string) => void;
-  updateQuantity: (id: number, delta: number, shopifyVariantId?: string) => void;
+  removeFromCart: (id: string | number, shopifyVariantId?: string) => void;
+  updateQuantity: (id: string | number, delta: number, shopifyVariantId?: string) => void;
   cartTotal: number;
   isCheckoutOpen: boolean;
   setIsCheckoutOpen: (val: boolean) => void;
   clearCart: () => void;
-  goToShopifyCheckout: () => Promise<void>;
+  goToShopifyCheckout: () => Promise<boolean>;
   shopifyEnabled: boolean;
 }
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -25,7 +26,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 // A cart "line" is uniquely identified by product id + variant id together —
 // this is what was missing before, causing different variants of the same
 // product to be merged into a single line.
-function sameLine(item: CartItem, id: number, shopifyVariantId?: string) {
+function sameLine(item: CartItem, id: string | number, shopifyVariantId?: string) {
   return item.id === id && (item.shopifyVariantId ?? null) === (shopifyVariantId ?? null);
 }
 
@@ -75,10 +76,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       ];
     });
   };
-  const removeFromCart = (id: number, shopifyVariantId?: string) => {
+  const removeFromCart = (id: string | number, shopifyVariantId?: string) => {
     setCartItems(prev => prev.filter(item => !sameLine(item, id, shopifyVariantId)));
   };
-  const updateQuantity = (id: number, delta: number, shopifyVariantId?: string) => {
+  const updateQuantity = (id: string | number, delta: number, shopifyVariantId?: string) => {
     setCartItems(prev =>
       prev.map(item => {
         if (sameLine(item, id, shopifyVariantId)) {
@@ -90,15 +91,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
   const clearCart = () => setCartItems([]);
   const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Lines carry `${slug}::${size}` from the catalogue mapper, so the checkout
+  // request can be rebuilt without asking Shopify anything.
   const goToShopifyCheckout = async () => {
-    const lines = cartItems
-      .filter(item => item.shopifyVariantId)
-      .map(item => ({ variantId: item.shopifyVariantId!, quantity: item.quantity }));
-    if (lines.length === 0) return;
-    const checkoutUrl = await createShopifyCheckout(lines);
-    if (checkoutUrl) {
-      window.location.href = checkoutUrl;
-    }
+    const items = cartItems.map(item => {
+      const [, option] = String(item.shopifyVariantId ?? '').split('::');
+      return { slug: String(item.id), option: option || undefined, quantity: item.quantity };
+    });
+    if (items.length === 0) return false;
+    const checkoutUrl = await createCheckoutSession(items);
+    if (!checkoutUrl) return false;
+    window.location.href = checkoutUrl;
+    return true;
   };
   return (
     <CartContext.Provider
@@ -112,7 +116,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setIsCheckoutOpen,
         clearCart,
         goToShopifyCheckout,
-        shopifyEnabled: isShopifyConfigured,
+        shopifyEnabled: true,
       }}
     >
       {children}
