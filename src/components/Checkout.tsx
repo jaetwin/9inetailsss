@@ -93,6 +93,7 @@ export default function Checkout() {
   // step: 'cart' | 'sms' | 'done'
   const [step, setStep] = useState<'cart' | 'sms' | 'done'>('cart');
   const [redirecting, setRedirecting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const hasOptedIn = typeof window !== 'undefined' && localStorage.getItem('sms_opted_in') === 'true';
 
@@ -115,28 +116,23 @@ export default function Checkout() {
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
     setRedirecting(true);
+    setCheckoutError(null);
+
+    // A failed checkout must never look like a completed sale: if Stripe can't
+    // create the session, keep the cart and say so.
+    const run = async () => {
+      const started = await goToShopifyCheckout();
+      if (!started) {
+        setCheckoutError('Checkout is unavailable right now. Please try again.');
+        setRedirecting(false);
+      }
+    };
 
     if (!hasOptedIn) {
-      // Show SMS prompt, then redirect
       setStep('sms');
-      setTimeout(async () => {
-        if (shopifyEnabled) {
-          await goToShopifyCheckout();
-        } else {
-          clearCart();
-          setStep('done');
-        }
-        setRedirecting(false);
-      }, 1000);
+      setTimeout(run, 1000);
     } else {
-      // Already opted in — go straight to checkout
-      if (shopifyEnabled) {
-        await goToShopifyCheckout();
-      } else {
-        clearCart();
-        setStep('done');
-      }
-      setRedirecting(false);
+      await run();
     }
   };
 
@@ -207,6 +203,12 @@ export default function Checkout() {
           ))
         )}
       </div>
+
+      {checkoutError && (
+        <p className="mt-4 font-sans text-[10px] md:text-[11px] uppercase tracking-[0.2em] text-[var(--blood-bright)] relative z-10">
+          {checkoutError}
+        </p>
+      )}
 
       <div className="mt-6 md:mt-8 pt-6 border-t border-[var(--whisper)]/30 flex justify-between items-end relative z-10">
         <div>
