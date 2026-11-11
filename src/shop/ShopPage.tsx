@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 
+import Checkout from '../components/Checkout'
 import ProductView from '../components/ProductView'
 import { useCart } from '../CartContext'
 import { fetchCatalogue, toDisplayProduct } from './api'
@@ -31,7 +32,7 @@ export default function ShopPage() {
   }, [])
 
   return (
-    <div className="min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
+    <div className="native-cursor min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
       <header className="sticky top-0 z-40 border-b border-[var(--whisper)]/30 bg-[var(--void)]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-5 md:px-10">
           <Link to="/" className="font-sans text-[11px] tracking-[0.3em] uppercase text-[var(--faded)] transition-colors hover:text-[var(--bone)]">
@@ -104,6 +105,9 @@ export default function ShopPage() {
       </main>
 
       {selected && <ProductView product={selected} onClose={() => setSelected(null)} />}
+      {/* The header's Cart button only flips context state, so the drawer has to
+          be mounted here too — the walkthrough mounts its own copy. */}
+      <Checkout />
     </div>
   )
 }
