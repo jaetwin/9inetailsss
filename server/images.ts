@@ -1,4 +1,4 @@
-import { getDb } from './db'
+import { getDb } from './db.js'
 
 // Garment images live in the same database as the catalogue. Vercel functions
 // have no writable disk and this shop should not need a cloud bucket account,
@@ -36,6 +36,14 @@ export async function saveImage(dataUrl: string): Promise<SavedImage> {
   await db.run('INSERT INTO images (id, mime, bytes, created_at) VALUES (?, ?, ?, ?)', [id, mime, bytes, Date.now()])
 
   return { id, url: `/api/images/${id}` }
+}
+
+/** Removes a stored image given its /api/images/… URL; other URLs are ignored. */
+export async function deleteImageByUrl(url: string): Promise<void> {
+  const id = /^\/api\/images\/([a-f0-9]{1,32})$/.exec(url)?.[1]
+  if (!id) return
+  const db = await getDb()
+  await db.run('DELETE FROM images WHERE id = ?', [id])
 }
 
 export async function readImage(id: string): Promise<{ mime: string; bytes: Uint8Array } | null> {

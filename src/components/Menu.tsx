@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from './Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCart } from '../CartContext';
@@ -110,7 +111,15 @@ export default function Menu({ onProductClick, onOverlayChange }: { onProductCli
     return () => clearInterval(interval);
   }, [overlayMessage, prayers.length]);
 
+  const navigate = useNavigate();
+
   const handleMenuItemClick = (item: string) => {
+    // The collection lives on its own page now, the same one /admin feeds.
+    if (item === 'COLLECTION') {
+      setIsOpen(false);
+      navigate('/shop');
+      return;
+    }
     if (item === 'PRAYER REQUEST') {
       setIsOpen(false);
       setTimeout(() => setPrayerRequestOpen(true), 400);

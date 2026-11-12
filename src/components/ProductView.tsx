@@ -275,7 +275,11 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                         <button key={color} onClick={() => { setSelectedColor(color); setSelectedSize(null); }} disabled={!avail}
                           title={color}
                           className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedColor === color ? 'border-[var(--bone)] scale-110' : 'border-[var(--whisper)]/30'} ${!avail ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
-                          style={{ backgroundColor: colorToCSS(color) }}>
+                          style={
+                            product.colorSwatches?.[color]
+                              ? { backgroundImage: `url('${product.colorSwatches[color]}')`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                              : { backgroundColor: colorToCSS(color) }
+                          }>
                           {!avail && <div className="absolute inset-0 flex items-center justify-center"><div className="w-full h-[1px] bg-[var(--faded)] rotate-45" /></div>}
                         </button>
                       );

@@ -12,6 +12,7 @@ interface StoredProduct {
   compareAt?: number
   category: Category
   image: string
+  images?: string[]
   badge?: 'New' | 'Bestseller' | 'Low stock'
   short: string
   description: string
@@ -19,8 +20,38 @@ interface StoredProduct {
   materials: string
   options?: { name: string; values: string[] }
   defaultOption?: string
+  colors?: ProductColor[]
+  tapstitch?: { designId: string; productCode: string }
   featured?: boolean
   published?: boolean
+}
+
+interface ProductColor {
+  name: string
+  id?: string
+  sizes?: string[]
+  swatch?: string
+}
+
+// One design from a Tapstitch export, as the import preview shows it.
+interface PreviewDesign {
+  designId: string
+  url: string
+  name: string
+  productCode: string
+  sizes: string[]
+  colors: (ProductColor & { swatch?: string })[]
+  existing: { slug: string; name: string; published: boolean } | null
+}
+
+interface OrderItem {
+  slug?: string
+  name: string
+  size?: string
+  color?: string
+  quantity: number
+  amount: number
+  tapstitch?: { designId: string; productCode: string; colorId?: string }
 }
 
 interface AdminOrder {
@@ -30,7 +61,7 @@ interface AdminOrder {
   customerName: string | null
   total: number
   currency: string
-  items: { slug?: string; name: string; size?: string; quantity: number; amount: number }[]
+  items: OrderItem[]
   shipping: {
     name?: string | null
     line1?: string | null
@@ -50,7 +81,8 @@ type Draft = {
   price: string
   compareAt: string
   category: Category
-  image: string
+  /** All photos in display order; the first is the cover. */
+  images: string[]
   badge: '' | NonNullable<StoredProduct['badge']>
   short: string
   description: string
@@ -59,6 +91,8 @@ type Draft = {
   optionName: string
   optionValues: string
   defaultOption: string
+  colors: ProductColor[]
+  tapstitch?: StoredProduct['tapstitch']
   featured: boolean
   published: boolean
 }
@@ -69,7 +103,7 @@ const emptyDraft = (): Draft => ({
   price: '',
   compareAt: '',
   category: 'tees',
-  image: '',
+  images: [],
   badge: '',
   short: '',
   description: '',
@@ -78,6 +112,7 @@ const emptyDraft = (): Draft => ({
   optionName: 'Size',
   optionValues: 'S, M, L, XL, XXL',
   defaultOption: 'M',
+  colors: [],
   featured: false,
   published: true,
 })
@@ -85,10 +120,11 @@ const emptyDraft = (): Draft => ({
 const toDraft = (product: StoredProduct): Draft => ({
   name: product.name,
   slug: product.slug,
-  price: String(product.price),
+  // Imported drafts arrive at 0: show an empty box rather than "$0".
+  price: product.price ? String(product.price) : '',
   compareAt: product.compareAt ? String(product.compareAt) : '',
   category: product.category,
-  image: product.image,
+  images: product.images?.length ? product.images : product.image ? [product.image] : [],
   badge: product.badge ?? '',
   short: product.short,
   description: product.description,
@@ -97,6 +133,8 @@ const toDraft = (product: StoredProduct): Draft => ({
   optionName: product.options?.name ?? '',
   optionValues: product.options?.values.join(', ') ?? '',
   defaultOption: product.defaultOption ?? '',
+  colors: product.colors ?? [],
+  tapstitch: product.tapstitch,
   featured: Boolean(product.featured),
   published: product.published !== false,
 })
@@ -107,7 +145,8 @@ const toPayload = (draft: Draft) => ({
   price: Number(draft.price),
   compareAt: draft.compareAt ? Number(draft.compareAt) : undefined,
   category: draft.category,
-  image: draft.image,
+  image: draft.images[0] ?? '',
+  images: draft.images,
   badge: draft.badge || undefined,
   short: draft.short,
   description: draft.description,
@@ -116,9 +155,12 @@ const toPayload = (draft: Draft) => ({
   optionName: draft.optionName,
   optionValues: draft.optionValues.split(',').map((value) => value.trim()).filter(Boolean),
   defaultOption: draft.defaultOption,
+  colors: draft.colors,
   featured: draft.featured,
   published: draft.published,
 })
+
+const tapstitchDesignUrl = (designId: string) => `https://www.tapstitch.com/account/products-pool/product/${designId}`
 
 const money = (value: number) => `$${value.toFixed(value % 1 === 0 ? 0 : 2)}`
 const money2 = (value: number) => `$${value.toFixed(2)}`
@@ -139,11 +181,21 @@ function tapstitchText(order: AdminOrder): string {
         .join('\n')
     : 'Address not captured'
 
+  // Tapstitch identifies a garment by design, product code and colour ID, so
+  // those are spelled out next to each piece when the piece was imported.
+  const itemLines = order.items.flatMap((item) => {
+    const variant = [item.color, item.size].filter(Boolean).join(' / ')
+    const line = `${item.name}${variant ? ` — ${variant}` : ''} × ${item.quantity}`
+    if (!item.tapstitch) return [line]
+    const ids = [`product ${item.tapstitch.productCode}`, item.tapstitch.colorId && `color ID ${item.tapstitch.colorId}`].filter(Boolean).join(' · ')
+    return [line, `  Tapstitch: ${ids}`, `  ${tapstitchDesignUrl(item.tapstitch.designId)}`]
+  })
+
   return [
     '9INETAILSS — PAID ORDER',
     `${placed} · ${order.total.toFixed(2)} USD · ${order.email ?? 'no email'}`,
     '',
-    ...order.items.map((item) => `${item.name}${item.size ? ` — ${item.size}` : ''} × ${item.quantity}`),
+    ...itemLines,
     '',
     'SHIP TO',
     address,
@@ -203,7 +255,12 @@ export default function AdminPage() {
   const [status, setStatus] = useState<'checking' | 'out' | 'in'>('checking')
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
-  const [config, setConfig] = useState<{ adminConfigured: boolean; paymentsConfigured: boolean } | null>(null)
+  const [config, setConfig] = useState<{
+    adminConfigured: boolean
+    paymentsConfigured: boolean
+    taxEnabled?: boolean
+    webhookConfigured?: boolean
+  } | null>(null)
 
   const [rows, setRows] = useState<StoredProduct[]>([])
   const [draft, setDraft] = useState<Draft>(emptyDraft())
@@ -217,6 +274,16 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([])
   const [orderNotice, setOrderNotice] = useState('')
   const [syncing, setSyncing] = useState(false)
+
+  const [filter, setFilter] = useState<'all' | 'live' | 'drafts'>('all')
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+
+  const [importFile, setImportFile] = useState<{ name: string; data: string } | null>(null)
+  const [preview, setPreview] = useState<PreviewDesign[] | null>(null)
+  const [chosen, setChosen] = useState<Set<string>>(new Set())
+  const [importBusy, setImportBusy] = useState(false)
+  const [importError, setImportError] = useState('')
 
   const loadRows = useCallback(async () => {
     const response = await fetch('/api/products?all=1')
@@ -307,7 +374,7 @@ export default function AdminPage() {
       setNotice({ kind: 'error', message: body.error ?? 'Could not save that piece.' })
       return
     }
-    setNotice({ kind: 'ok', message: editing ? 'Piece updated.' : 'Piece published to the collection.' })
+    setNotice({ kind: 'ok', message: editing ? 'Piece updated.' : draft.published ? 'Piece published to the collection.' : 'Draft saved.' })
     setEditorOpen(false)
     setEditing(null)
     await loadRows()
@@ -322,6 +389,130 @@ export default function AdminPage() {
     }
     setNotice({ kind: 'ok', message: 'Piece deleted.' })
     await loadRows()
+  }
+
+  async function bulk(action: 'publish' | 'unpublish' | 'delete', slugs: string[]) {
+    if (!slugs.length) return
+    const what = slugs.length === 1 ? 'this piece' : `${slugs.length} pieces`
+    if (action === 'delete' && !window.confirm(`Remove ${what} from the shop? Imported pieces come back if you import the Tapstitch export again.`)) return
+    setBulkBusy(true)
+    setNotice(null)
+    const response = await fetch('/api/admin/products/bulk', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action, slugs }),
+    })
+    const body = (await response.json().catch(() => ({}))) as {
+      changed?: string[]
+      blocked?: { name: string }[]
+      removed?: string[]
+      error?: string
+    }
+    setBulkBusy(false)
+    if (!response.ok) {
+      setNotice({ kind: 'error', message: body.error ?? 'Could not update those pieces.' })
+      return
+    }
+    const count = (n: number) => `${n} piece${n === 1 ? '' : 's'}`
+    if (action === 'delete') {
+      setNotice({ kind: 'ok', message: `${count(body.removed?.length ?? 0)} removed.` })
+    } else if (action === 'unpublish') {
+      setNotice({ kind: 'ok', message: `${count(body.changed?.length ?? 0)} moved to drafts.` })
+    } else {
+      const live = body.changed?.length ?? 0
+      const blocked = body.blocked ?? []
+      setNotice({
+        kind: blocked.length ? 'error' : 'ok',
+        message: [live ? `${count(live)} now live.` : '', blocked.length ? `Set a price first: ${blocked.map((b) => b.name).join(', ')}.` : '']
+          .filter(Boolean)
+          .join(' '),
+      })
+    }
+    setSelected(new Set())
+    await loadRows()
+  }
+
+  const readAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(new Error('Could not read that file.'))
+      reader.readAsDataURL(file)
+    })
+
+  // Step 1: read the export and show what is in it. Nothing is saved yet.
+  async function openImport(file: File) {
+    setImportError('')
+    setNotice(null)
+    if (!/\.xlsx$/i.test(file.name)) {
+      setImportError('Choose the .xlsx file Tapstitch exported.')
+      return
+    }
+    setImportBusy(true)
+    try {
+      const data = await readAsDataUrl(file)
+      const response = await fetch('/api/admin/import/tapstitch/preview', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ file: data }),
+      })
+      const body = (await response.json().catch(() => ({}))) as { designs?: PreviewDesign[]; error?: string }
+      if (!response.ok || !body.designs) throw new Error(body.error ?? 'Could not read that file.')
+      setImportFile({ name: file.name, data })
+      setPreview(body.designs)
+      // New designs start ticked; ones already in the shop only refresh when ticked.
+      setChosen(new Set(body.designs.filter((design) => !design.existing).map((design) => design.designId)))
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : 'Could not read that file.')
+    } finally {
+      setImportBusy(false)
+    }
+  }
+
+  function closeImport() {
+    setPreview(null)
+    setImportFile(null)
+    setChosen(new Set())
+    setImportError('')
+  }
+
+  // Step 2: save the ticked designs as drafts.
+  async function runImport() {
+    if (!importFile || !chosen.size) return
+    setImportBusy(true)
+    setImportError('')
+    const response = await fetch('/api/admin/import/tapstitch', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ file: importFile.data, designIds: [...chosen] }),
+    })
+    const body = (await response.json().catch(() => ({}))) as { created?: string[]; updated?: string[]; error?: string }
+    setImportBusy(false)
+    if (!response.ok) {
+      setImportError(body.error ?? 'Could not import those designs.')
+      return
+    }
+    const created = body.created?.length ?? 0
+    const updated = body.updated?.length ?? 0
+    closeImport()
+    setFilter(created && !updated ? 'drafts' : 'all')
+    setNotice({
+      kind: 'ok',
+      message: [
+        created ? `${created} imported as drafts. Add a price and photo, then tick them and choose Go live.` : '',
+        updated ? `${updated} refreshed with Tapstitch's latest colours and sizes.` : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+    })
+    await loadRows()
+  }
+
+  const toggled = (current: Set<string>, id: string) => {
+    const next = new Set(current)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
   }
 
   async function syncOrders() {
@@ -351,25 +542,55 @@ export default function AdminPage() {
 
   const paidOrders = orders.filter((order) => order.status === 'paid')
 
-  async function upload(file: File) {
+  const isLive = (product: StoredProduct) => product.published !== false
+  const liveCount = rows.filter(isLive).length
+  const visible = rows.filter((product) => (filter === 'all' ? true : filter === 'live' ? isLive(product) : !isLive(product)))
+  const visibleSelected = visible.filter((product) => selected.has(product.slug)).map((product) => product.slug)
+  const allVisibleSelected = visible.length > 0 && visibleSelected.length === visible.length
+
+  const [uploadProgress, setUploadProgress] = useState('')
+  const [dragging, setDragging] = useState(false)
+  const [imageUrl, setImageUrl] = useState('')
+
+  // Uploads one at a time (each is resized first) and appends them in the
+  // order chosen, so a batch of 6 photos lands as 6 photos in that order.
+  async function uploadFiles(files: File[]) {
+    const pictures = files.filter((file) => file.type.startsWith('image/'))
+    if (!pictures.length) {
+      setUploadError('Drop PNG, JPEG or WebP photos.')
+      return
+    }
     setUploading(true)
     setUploadError('')
-    try {
-      const dataUrl = await prepareImage(file)
-      const response = await fetch('/api/admin/images', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ dataUrl }),
-      })
-      const body = (await response.json().catch(() => ({}))) as { url?: string; error?: string }
-      if (!response.ok || !body.url) throw new Error(body.error ?? 'Could not save that image.')
-      set('image', body.url)
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Could not save that image.')
-    } finally {
-      setUploading(false)
+    const failed: string[] = []
+    for (const [index, file] of pictures.entries()) {
+      setUploadProgress(`Uploading ${index + 1} of ${pictures.length}…`)
+      try {
+        const dataUrl = await prepareImage(file)
+        const response = await fetch('/api/admin/images', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ dataUrl }),
+        })
+        const body = (await response.json().catch(() => ({}))) as { url?: string; error?: string }
+        if (!response.ok || !body.url) throw new Error(body.error ?? 'Could not save that image.')
+        setDraft((current) => ({ ...current, images: [...current.images, body.url!].slice(0, 12) }))
+      } catch (error) {
+        failed.push(`${file.name}: ${error instanceof Error ? error.message : 'could not upload'}`)
+      }
     }
+    setUploading(false)
+    setUploadProgress('')
+    if (failed.length) setUploadError(failed.join(' · '))
   }
+
+  const moveImage = (from: number, to: number) =>
+    setDraft((current) => {
+      const images = [...current.images]
+      const [moved] = images.splice(from, 1)
+      images.splice(to, 0, moved)
+      return { ...current, images }
+    })
 
   const shell = (children: React.ReactNode) => (
     <div className="native-cursor min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
@@ -442,7 +663,23 @@ export default function AdminPage() {
             Pieces <span className="font-sans text-[20px] text-[var(--faded)]">{rows.length}</span>
           </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <label
+            className={`cursor-pointer border border-[var(--gold)]/60 px-5 py-3 font-sans text-[11px] font-bold uppercase tracking-[0.25em] text-[var(--gold-bright)] transition-colors duration-300 hover:border-[var(--gold)] hover:text-[var(--bone)] ${importBusy ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            {importBusy && !preview ? 'Reading…' : 'Import from Tapstitch'}
+            <input
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              className="hidden"
+              disabled={importBusy}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void openImport(file)
+                event.target.value = ''
+              }}
+            />
+          </label>
           <button
             onClick={startNew}
             className="bg-[var(--bone)] px-5 py-3 font-sans text-[11px] font-bold uppercase tracking-[0.25em] text-[var(--void)] transition-colors duration-300 hover:bg-[var(--gold)]"
@@ -463,6 +700,16 @@ export default function AdminPage() {
           Checkout is not connected — add STRIPE_SECRET_KEY to take payments.
         </p>
       )}
+      {config?.paymentsConfigured && config.taxEnabled === false && (
+        <p className="mt-6 border border-[var(--gold)]/40 bg-[var(--ash)]/60 px-4 py-3 font-sans text-[11px] leading-relaxed tracking-[0.05em] text-[var(--parchment)]">
+          Sales tax is off — checkout charges no tax until Stripe Tax is set up (Stripe Dashboard → Settings → Tax).
+        </p>
+      )}
+      {config?.paymentsConfigured && config.webhookConfigured === false && (
+        <p className="mt-6 border border-[var(--gold)]/40 bg-[var(--ash)]/60 px-4 py-3 font-sans text-[11px] leading-relaxed tracking-[0.05em] text-[var(--parchment)]">
+          No Stripe webhook yet — an order only shows as paid when the buyer returns to the site. Add STRIPE_WEBHOOK_SECRET.
+        </p>
+      )}
       {notice && (
         <p
           className={`mt-4 font-sans text-[11px] uppercase tracking-[0.2em] ${
@@ -471,6 +718,95 @@ export default function AdminPage() {
         >
           {notice.message}
         </p>
+      )}
+      {importError && !preview && (
+        <p className="mt-4 font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--blood-bright)]">{importError}</p>
+      )}
+
+      {preview && (
+        <section className="mt-8 border border-[var(--gold)]/40 bg-[var(--ash)]/40 p-5 md:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="font-sans text-[11px] uppercase tracking-[0.3em] text-[var(--gold-bright)]">Tapstitch export · {importFile?.name}</p>
+              <h2 className="mt-2 font-bebas text-[30px] uppercase leading-none">
+                {preview.length} designs <span className="font-sans text-[15px] text-[var(--faded)]">{chosen.size} ticked</span>
+              </h2>
+              <p className="mt-2 max-w-[640px] font-serif text-[14px] italic leading-relaxed text-[var(--faded)]">
+                Ticked designs come in as drafts, hidden from the shop until you choose Go live. Designs already in the shop
+                keep your name, price, photos and description; ticking them only refreshes colours and sizes.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setChosen(chosen.size === preview.length ? new Set() : new Set(preview.map((d) => d.designId)))}
+                className="border border-[var(--whisper)]/40 px-4 py-3 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:border-[var(--bone)] hover:text-[var(--bone)]"
+              >
+                {chosen.size === preview.length ? 'Untick all' : 'Tick all'}
+              </button>
+              <button
+                type="button"
+                onClick={closeImport}
+                disabled={importBusy}
+                className="border border-[var(--whisper)]/40 px-4 py-3 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:border-[var(--bone)] hover:text-[var(--bone)] disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={runImport}
+                disabled={importBusy || chosen.size === 0}
+                className="bg-[var(--bone)] px-5 py-3 font-sans text-[11px] font-bold uppercase tracking-[0.25em] text-[var(--void)] transition-colors hover:bg-[var(--gold)] disabled:opacity-40"
+              >
+                {importBusy ? 'Importing…' : `Import ${chosen.size}`}
+              </button>
+            </div>
+          </div>
+          {importError && <p className="mt-4 font-sans text-[11px] tracking-[0.1em] text-[var(--blood-bright)]">{importError}</p>}
+
+          <ul className="mt-5 grid gap-2 md:grid-cols-2">
+            {preview.map((design) => (
+              <li key={design.designId}>
+                <label
+                  className={`flex cursor-pointer items-start gap-3 border p-3 transition-colors ${
+                    chosen.has(design.designId) ? 'border-[var(--bone)]/60 bg-[var(--void)]/60' : 'border-[var(--whisper)]/25'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={chosen.has(design.designId)}
+                    onChange={() => setChosen((current) => toggled(current, design.designId))}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-bebas text-[19px] uppercase leading-none tracking-[0.04em]">{design.name}</span>
+                      {design.existing ? (
+                        <span className="border border-[var(--whisper)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--faded)]">
+                          In shop{design.existing.published ? ' · live' : ' · draft'}
+                        </span>
+                      ) : (
+                        <span className="border border-[var(--gold)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">New</span>
+                      )}
+                    </span>
+                    <span className="mt-2 flex flex-wrap items-center gap-1.5">
+                      {design.colors.map((color) => (
+                        <span key={color.id ?? color.name} title={color.name} className="flex items-center gap-1">
+                          {color.swatch ? (
+                            <img src={color.swatch} alt="" className="h-7 w-7 border border-[var(--whisper)]/30 object-cover" />
+                          ) : null}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="mt-2 block font-sans text-[10px] uppercase tracking-[0.15em] text-[var(--faded)]">
+                      {design.productCode} · {design.colors.map((c) => c.name).join(', ')} · {design.sizes.join(' / ')}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <section className="mt-10 border-t border-[var(--whisper)]/25 pt-8">
@@ -531,9 +867,18 @@ export default function AdminPage() {
                       key={index}
                       className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--whisper)]/15 pb-1 font-sans text-[12px] tracking-[0.06em]"
                     >
-                      <span className="text-[var(--bone)]">{item.name}</span>
+                      <span className="text-[var(--bone)]">
+                        {item.name}
+                        {item.tapstitch && (
+                          <span className="ml-2 text-[10px] uppercase tracking-[0.15em] text-[var(--faded)]">
+                            {item.tapstitch.productCode}
+                            {item.tapstitch.colorId ? ` · color ${item.tapstitch.colorId}` : ''}
+                          </span>
+                        )}
+                      </span>
                       <span className="text-[var(--faded)]">
-                        {item.size ? `${item.size} · ` : ''}× {item.quantity}
+                        {[item.color, item.size].filter(Boolean).join(' / ')}
+                        {item.color || item.size ? ' · ' : ''}× {item.quantity}
                       </span>
                     </li>
                   ))}
@@ -566,15 +911,97 @@ export default function AdminPage() {
           {rows.length === 0 ? (
             <div className="border border-[var(--whisper)]/30 bg-[var(--ash)]/40 px-8 py-16 text-center">
               <p className="font-gothic text-[32px]">Nothing listed yet</p>
-              <p className="mt-2 font-serif text-[15px] italic text-[var(--faded)]">Add your first piece and it appears on the sanctuary cards immediately.</p>
+              <p className="mt-2 font-serif text-[15px] italic text-[var(--faded)]">
+                Import your Tapstitch export, or add a piece by hand. Imported pieces wait as drafts until you put them live.
+              </p>
             </div>
           ) : (
+            <>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex border border-[var(--whisper)]/35">
+                  {(
+                    [
+                      ['all', `All ${rows.length}`],
+                      ['live', `Live ${liveCount}`],
+                      ['drafts', `Drafts ${rows.length - liveCount}`],
+                    ] as const
+                  ).map(([key, title]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setFilter(key)
+                        setSelected(new Set())
+                      }}
+                      className={`px-4 py-2 font-sans text-[10px] uppercase tracking-[0.2em] transition-colors ${
+                        filter === key ? 'bg-[var(--bone)] text-[var(--void)]' : 'text-[var(--faded)] hover:text-[var(--bone)]'
+                      }`}
+                    >
+                      {title}
+                    </button>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)]">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={() => setSelected(allVisibleSelected ? new Set() : new Set(visible.map((p) => p.slug)))}
+                  />
+                  Select all
+                </label>
+              </div>
+
+              {visibleSelected.length > 0 && (
+                <div className="sticky top-16 z-20 mb-3 flex flex-wrap items-center gap-2 border border-[var(--gold)]/50 bg-[var(--void)]/95 px-4 py-3 backdrop-blur-md">
+                  <span className="mr-auto font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">
+                    {visibleSelected.length} selected
+                  </span>
+                  <button
+                    type="button"
+                    disabled={bulkBusy}
+                    onClick={() => bulk('publish', visibleSelected)}
+                    className="bg-[var(--bone)] px-4 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--void)] transition-colors hover:bg-[var(--gold)] disabled:opacity-40"
+                  >
+                    Go live
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bulkBusy}
+                    onClick={() => bulk('unpublish', visibleSelected)}
+                    className="border border-[var(--whisper)]/40 px-4 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--bone)] transition-colors hover:border-[var(--bone)] disabled:opacity-40"
+                  >
+                    Move to drafts
+                  </button>
+                  <button
+                    type="button"
+                    disabled={bulkBusy}
+                    onClick={() => bulk('delete', visibleSelected)}
+                    className="border border-[var(--whisper)]/40 px-4 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:border-[var(--blood)] hover:text-[var(--blood-bright)] disabled:opacity-40"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+
+              {visible.length === 0 ? (
+                <p className="border border-[var(--whisper)]/30 bg-[var(--ash)]/30 px-6 py-8 font-serif text-[15px] italic text-[var(--faded)]">
+                  {filter === 'live' ? 'Nothing is live yet. Tick drafts and choose Go live.' : 'No drafts. Imported pieces land here first.'}
+                </p>
+              ) : (
             <ul className="divide-y divide-[var(--whisper)]/25 border-y border-[var(--whisper)]/25">
-              {rows.map((product) => (
+              {visible.map((product) => (
                 <li key={product.slug} className="flex flex-wrap items-center gap-3 py-4 sm:gap-4">
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${product.name}`}
+                    checked={selected.has(product.slug)}
+                    onChange={() => setSelected((current) => toggled(current, product.slug))}
+                  />
                   <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-[var(--whisper)]/30 bg-[var(--ash)]">
                     {product.image ? (
                       <img src={product.image} alt="" className="h-full w-full object-cover" />
+                    ) : product.colors?.[0]?.swatch ? (
+                      <img src={product.colors[0].swatch} alt="" className="h-full w-full object-cover opacity-70" />
                     ) : (
                       <span className="font-sans text-[9px] uppercase tracking-[0.15em] text-[var(--faded)]">No image</span>
                     )}
@@ -582,19 +1009,49 @@ export default function AdminPage() {
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="font-bebas text-[22px] uppercase leading-none tracking-[0.04em]">{product.name}</span>
-                      {product.published === false && (
+                      {isLive(product) ? (
+                        <span className="border border-[var(--gold)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">Live</span>
+                      ) : (
                         <span className="border border-[var(--whisper)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--faded)]">Draft</span>
                       )}
                       {product.featured && (
                         <span className="border border-[var(--gold)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">Featured</span>
                       )}
+                      {product.price < 1 && (
+                        <span className="border border-[var(--blood)]/60 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--blood-bright)]">No price</span>
+                      )}
+                      {!product.image && (
+                        <span className="border border-[var(--whisper)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--faded)]">No photo</span>
+                      )}
                     </span>
                     <span className="mt-1 block truncate font-sans text-[11px] uppercase tracking-[0.15em] text-[var(--faded)]">
-                      {money(product.price)} · {CATEGORY_LABELS[product.category] ?? product.category}
+                      {product.price >= 1 ? money(product.price) : '—'} · {CATEGORY_LABELS[product.category] ?? product.category}
+                      {product.colors?.length ? ` · ${product.colors.length} colour${product.colors.length === 1 ? '' : 's'}` : ''}
                       {product.options ? ` · ${product.options.values.join(' / ')}` : ''}
+                      {product.tapstitch ? ` · Tapstitch ${product.tapstitch.productCode}` : ''}
                     </span>
+                    {product.colors && product.colors.length > 0 && (
+                      <span className="mt-2 flex flex-wrap gap-1">
+                        {product.colors.map((color) =>
+                          color.swatch ? (
+                            <img key={color.name} src={color.swatch} alt={color.name} title={color.name} className="h-6 w-6 border border-[var(--whisper)]/30 object-cover" />
+                          ) : (
+                            <span key={color.name} className="border border-[var(--whisper)]/30 px-1.5 py-0.5 font-sans text-[9px] uppercase tracking-[0.1em] text-[var(--faded)]">
+                              {color.name}
+                            </span>
+                          ),
+                        )}
+                      </span>
+                    )}
                   </span>
                   <span className="ml-auto flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => bulk(isLive(product) ? 'unpublish' : 'publish', [product.slug])}
+                      disabled={bulkBusy}
+                      className="px-3 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:text-[var(--gold-bright)] disabled:opacity-40"
+                    >
+                      {isLive(product) ? 'To drafts' : 'Go live'}
+                    </button>
                     <button
                       onClick={() => startEdit(product)}
                       className="px-3 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:text-[var(--bone)]"
@@ -611,6 +1068,8 @@ export default function AdminPage() {
                 </li>
               ))}
             </ul>
+              )}
+            </>
           )}
         </div>
 
@@ -633,7 +1092,7 @@ export default function AdminPage() {
                 </Field>
                 <div className="grid grid-cols-2 gap-3">
                   <Field title="Price (USD)">
-                    <input required inputMode="numeric" className={input} value={draft.price} onChange={(event) => set('price', event.target.value)} placeholder="64" />
+                    <input inputMode="numeric" className={input} value={draft.price} onChange={(event) => set('price', event.target.value)} placeholder="64" />
                   </Field>
                   <Field title="Compare at">
                     <input inputMode="numeric" className={input} value={draft.compareAt} onChange={(event) => set('compareAt', event.target.value)} placeholder="—" />
@@ -649,52 +1108,105 @@ export default function AdminPage() {
                   </select>
                 </Field>
                 <div>
-                  <span className={label}>Garment image</span>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <label
-                      className={`cursor-pointer border border-[var(--whisper)]/40 px-4 py-3 font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--bone)] transition-colors hover:border-[var(--gold)] ${uploading ? 'pointer-events-none opacity-50' : ''}`}
-                    >
-                      {uploading ? 'Uploading…' : draft.image ? 'Replace image' : 'Upload image'}
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        className="hidden"
-                        disabled={uploading}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0]
-                          if (file) void upload(file)
-                          event.target.value = ''
-                        }}
-                      />
-                    </label>
-                    {draft.image && !uploading && (
-                      <button
-                        type="button"
-                        onClick={() => set('image', '')}
-                        className="border border-[var(--whisper)]/40 px-4 py-3 font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:border-[var(--blood)] hover:text-[var(--blood-bright)]"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
+                  <span className={label}>Photos {draft.images.length ? `(${draft.images.length}/12)` : ''}</span>
+                  {/* Drop several photos at once, or click to pick several. */}
+                  <label
+                    onDragOver={(event) => {
+                      event.preventDefault()
+                      setDragging(true)
+                    }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      setDragging(false)
+                      if (!uploading) void uploadFiles([...event.dataTransfer.files])
+                    }}
+                    className={`flex cursor-pointer flex-col items-center justify-center border border-dashed px-4 py-6 text-center transition-colors ${
+                      dragging ? 'border-[var(--gold)] bg-[var(--gold)]/10' : 'border-[var(--whisper)]/50 hover:border-[var(--gold)]'
+                    } ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+                  >
+                    <span className="font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--bone)]">
+                      {uploading ? uploadProgress : 'Drop photos here or click to choose'}
+                    </span>
+                    <span className="mt-1 font-serif text-[12px] italic text-[var(--faded)]">Several at once is fine. Resized to 1600px.</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(event) => {
+                        const files = [...(event.target.files ?? [])]
+                        event.target.value = ''
+                        if (files.length) void uploadFiles(files)
+                      }}
+                    />
+                  </label>
                   {uploadError && (
                     <p className="mt-2 font-sans text-[11px] tracking-[0.1em] text-[var(--blood-bright)]">{uploadError}</p>
                   )}
-                  <input
-                    className={`${input} mt-2`}
-                    value={draft.image}
-                    onChange={(event) => set('image', event.target.value)}
-                    placeholder="/api/images/… or https://…"
-                  />
-                  <span className="mt-1 block font-serif text-[12px] italic text-[var(--faded)]">
-                    Uploaded photos are resized to 1600px and stored with the catalogue. A Tapstitch URL works too.
-                  </span>
+                  {draft.images.length > 0 && (
+                    <ul className="mt-3 grid grid-cols-3 gap-2">
+                      {draft.images.map((url, index) => (
+                        <li key={url} className="relative aspect-square overflow-hidden border border-[var(--whisper)]/30 bg-[var(--abyss)]">
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                          {index === 0 && (
+                            <span className="absolute left-1 top-1 bg-[var(--void)]/80 px-1.5 py-0.5 font-sans text-[8px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">
+                              Cover
+                            </span>
+                          )}
+                          <span className="absolute inset-x-0 bottom-0 flex justify-between bg-[var(--void)]/75">
+                            <button
+                              type="button"
+                              disabled={index === 0}
+                              onClick={() => moveImage(index, index - 1)}
+                              aria-label="Move earlier"
+                              className="px-2 py-1 font-sans text-[12px] text-[var(--bone)] disabled:opacity-20"
+                            >
+                              ←
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => set('images', draft.images.filter((_, i) => i !== index))}
+                              aria-label="Remove photo"
+                              className="px-2 py-1 font-sans text-[12px] text-[var(--faded)] hover:text-[var(--blood-bright)]"
+                            >
+                              ×
+                            </button>
+                            <button
+                              type="button"
+                              disabled={index === draft.images.length - 1}
+                              onClick={() => moveImage(index, index + 1)}
+                              aria-label="Move later"
+                              className="px-2 py-1 font-sans text-[12px] text-[var(--bone)] disabled:opacity-20"
+                            >
+                              →
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      className={input}
+                      value={imageUrl}
+                      onChange={(event) => setImageUrl(event.target.value)}
+                      placeholder="Or paste an https:// photo link"
+                    />
+                    <button
+                      type="button"
+                      disabled={!/^https?:\/\//.test(imageUrl.trim())}
+                      onClick={() => {
+                        set('images', [...draft.images, imageUrl.trim()].slice(0, 12))
+                        setImageUrl('')
+                      }}
+                      className="border border-[var(--whisper)]/40 px-4 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--bone)] hover:border-[var(--gold)] disabled:opacity-30"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
-                {draft.image && (
-                  <span className="grid h-40 place-items-center overflow-hidden border border-[var(--whisper)]/30 bg-[var(--abyss)]">
-                    <img src={draft.image} alt="" className="h-full w-full object-cover" />
-                  </span>
-                )}
                 <Field title="Badge">
                   <select className={input} value={draft.badge} onChange={(event) => set('badge', event.target.value as Draft['badge'])}>
                     <option value="" className="bg-[var(--void)]">None</option>
@@ -726,10 +1238,42 @@ export default function AdminPage() {
                 <Field title="Option values" hint="Comma separated. Empty means no options.">
                   <input className={input} value={draft.optionValues} onChange={(event) => set('optionValues', event.target.value)} placeholder="S, M, L, XL" />
                 </Field>
+                {draft.colors.length > 0 && (
+                  <div>
+                    <span className={label}>Colours</span>
+                    <div className="flex flex-wrap gap-2">
+                      {draft.colors.map((color) => (
+                        <span key={color.name} className="flex items-center gap-2 border border-[var(--whisper)]/40 py-1 pl-1 pr-2">
+                          {color.swatch && <img src={color.swatch} alt="" className="h-7 w-7 object-cover" />}
+                          <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-[var(--parchment)]">{color.name}</span>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${color.name}`}
+                            onClick={() => set('colors', draft.colors.filter((c) => c.name !== color.name))}
+                            className="font-sans text-[12px] text-[var(--faded)] hover:text-[var(--blood-bright)]"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <span className="mt-1 block font-serif text-[12px] italic text-[var(--faded)]">
+                      Buyers pick one of these. Removing a colour hides it; importing again brings it back.
+                    </span>
+                  </div>
+                )}
+                {draft.tapstitch && (
+                  <p className="font-sans text-[10px] uppercase leading-relaxed tracking-[0.15em] text-[var(--faded)]">
+                    Imported from Tapstitch · {draft.tapstitch.productCode} ·{' '}
+                    <a href={tapstitchDesignUrl(draft.tapstitch.designId)} target="_blank" rel="noreferrer" className="text-[var(--gold-bright)] underline-offset-2 hover:underline">
+                      Open design
+                    </a>
+                  </p>
+                )}
                 <div className="flex flex-col gap-2 border-t border-[var(--whisper)]/30 pt-4">
                   <label className="flex items-center gap-2 font-sans text-[11px] uppercase tracking-[0.15em] text-[var(--parchment)]">
                     <input type="checkbox" checked={draft.published} onChange={(event) => set('published', event.target.checked)} />
-                    Published in the collection
+                    Live in the shop (needs a price)
                   </label>
                   <label className="flex items-center gap-2 font-sans text-[11px] uppercase tracking-[0.15em] text-[var(--parchment)]">
                     <input type="checkbox" checked={draft.featured} onChange={(event) => set('featured', event.target.checked)} />
@@ -742,7 +1286,7 @@ export default function AdminPage() {
                   disabled={saving}
                   className="bg-[var(--bone)] px-6 py-4 font-sans text-[12px] font-bold uppercase tracking-[0.3em] text-[var(--void)] transition-colors duration-500 hover:bg-[var(--gold)] disabled:opacity-40"
                 >
-                  {saving ? 'Saving…' : editing ? 'Save changes' : 'Publish piece'}
+                  {saving ? 'Saving…' : editing ? 'Save changes' : draft.published ? 'Publish piece' : 'Save draft'}
                 </button>
               </div>
             </form>

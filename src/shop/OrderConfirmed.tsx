@@ -13,6 +13,10 @@ interface ReceiptItem {
 interface Receipt {
   paid: boolean
   email: string | null
+  subtotal?: number
+  discount?: number
+  shippingCost?: number
+  tax?: number
   total: number
   shipping: OrderAddress | null
   items: ReceiptItem[]
@@ -97,6 +101,24 @@ export default function OrderConfirmed() {
                 </li>
               ))}
             </ul>
+
+            <dl className="mt-4 space-y-2 font-sans text-[12px] tracking-[0.08em] text-[var(--faded)]">
+              {(
+                [
+                  ['Subtotal', state.receipt.subtotal],
+                  ['Discount', state.receipt.discount ? -state.receipt.discount : undefined],
+                  ['Shipping', state.receipt.shippingCost],
+                  ['Tax', state.receipt.tax],
+                ] as [string, number | undefined][]
+              )
+                .filter((row): row is [string, number] => row[1] !== undefined)
+                .map(([label, value]) => (
+                  <div key={label} className="flex items-baseline justify-between">
+                    <dt className="uppercase text-[11px] tracking-[0.25em]">{label}</dt>
+                    <dd>{value < 0 ? `−${money(-value)}` : money(value)}</dd>
+                  </div>
+                ))}
+            </dl>
 
             <div className="mt-4 flex items-baseline justify-between font-sans text-[15px] tracking-[0.08em]">
               <span className="text-[var(--faded)] uppercase text-[11px] tracking-[0.25em]">Total paid</span>
