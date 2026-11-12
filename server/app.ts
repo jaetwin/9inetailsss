@@ -4,7 +4,19 @@ import { cors } from 'hono/cors'
 import type { Context, Next } from 'hono'
 
 import { FREE_SHIPPING_AT, SHIPPING_FLAT, SHIPPING_COUNTRIES } from '../src/data/products.js'
-import { ADMIN_COOKIE, ADMIN_COOKIE_MAX_AGE, adminConfigured, createSession, isValidSession, passwordMatches } from './auth.js'
+import {
+  ADMIN_COOKIE,
+  ADMIN_COOKIE_MAX_AGE,
+  adminConfigured,
+  createSession,
+  createUnlockToken,
+  isValidSession,
+  isValidUnlockToken,
+  maintenancePasswordMatches,
+  passwordMatches,
+  UNLOCK_COOKIE,
+} from './auth.js'
+import { maintenanceOn, setMaintenance } from './settings.js'
 import { readImage, saveImage } from './images.js'
 import { listOrders, recordPendingOrder, recordStripeSession, removeOrder, type OrderAddress, type OrderItem } from './orders.js'
 import {
@@ -178,6 +190,51 @@ app.get('/api/config', async (c) => {
 })
 
 // ── Catalogue ────────────────────────────────────────────────────────────────
+
+// ── Maintenance ──────────────────────────────────────────────────────────────
+
+// Visitors with the unlock pass, and a signed-in owner, see the site while it
+// is closed; everyone else only gets the lock page.
+async function canSeeSite(c: Context): Promise<boolean> {
+  if (!(await maintenanceOn())) return true
+  if (await isValidUnlockToken(getCookie(c, UNLOCK_COOKIE))) return true
+  return isValidSession(getCookie(c, ADMIN_COOKIE))
+}
+
+app.get('/api/maintenance', async (c) => c.json({ on: await maintenanceOn(), unlocked: await canSeeSite(c) }))
+
+app.post('/api/maintenance/unlock', async (c) => {
+  const body = await c.req.json<{ password?: string }>().catch(() => null)
+  if (!maintenancePasswordMatches(body?.password)) {
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    return c.json({ error: 'That password is not right.' }, 401)
+  }
+  setCookie(c, UNLOCK_COOKIE, await createUnlockToken(), {
+    httpOnly: true,
+    sameSite: 'Lax',
+    secure: new URL(c.req.url).protocol === 'https:',
+    path: '/',
+    maxAge: ADMIN_COOKIE_MAX_AGE,
+  })
+  return c.json({ ok: true })
+})
+
+app.post('/api/admin/maintenance', requireAdmin, async (c) => {
+  const body = await c.req.json<{ on?: unknown }>().catch(() => null)
+  if (typeof body?.on !== 'boolean') return c.json({ error: 'Send { on: true } or { on: false }.' }, 400)
+  await setMaintenance(body.on)
+  return c.json({ on: body.on })
+})
+
+// While closed, the catalogue and checkout answer only to unlocked visitors,
+// so the site's data and sales stay shut too, not just its pages.
+async function requireOpenSite(c: Context, next: Next) {
+  if (!(await canSeeSite(c))) return c.json({ error: 'The shop is closed for maintenance.', code: 'maintenance' }, 503)
+  await next()
+}
+app.use('/api/products', requireOpenSite)
+app.use('/api/products/*', requireOpenSite)
+app.use('/api/checkout', requireOpenSite)
 
 app.get('/api/products', async (c) => {
   const includeDrafts = c.req.query('all') === '1' && (await isValidSession(getCookie(c, ADMIN_COOKIE)))

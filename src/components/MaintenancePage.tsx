@@ -2,24 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import tailLogo from './9tailsslogo.png';
 
-const CORRECT_PASSWORD = import.meta.env.VITE_MAINTENANCE_PASSWORD || 'sanctuary';
-
+// The password is checked by the server (MAINTENANCE_PASSWORD), never shipped
+// to the browser. A correct one sets a signed cookie that unlocks every page.
 export default function MaintenancePage({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
   const [shaking, setShaking] = useState(false);
 
-  useEffect(() => {
-    if (sessionStorage.getItem('unlocked') === 'true') {
-      onUnlock();
-    }
-  }, []);
-
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === CORRECT_PASSWORD) {
-      sessionStorage.setItem('unlocked', 'true');
+    const response = await fetch('/api/maintenance/unlock', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password }),
+    }).catch(() => null);
+    if (response?.ok) {
       onUnlock();
     } else {
       setError(true);

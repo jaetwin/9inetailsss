@@ -115,6 +115,7 @@ async function migrate(db: Db) {
   await db.run(SCHEMA)
   await db.run(IMAGES_SCHEMA)
   await db.run(ORDERS_SCHEMA)
+  await db.run('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
   await widenOrderTotal(db)
   await addProductColumns(db)
 }

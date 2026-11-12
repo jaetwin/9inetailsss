@@ -9,6 +9,7 @@ import {ToastProvider} from './components/Toast';
 import ShopPage from './shop/ShopPage';
 import AdminPage from './shop/AdminPage';
 import OrderConfirmed from './shop/OrderConfirmed';
+import MaintenanceGate from './shop/MaintenanceGate';
 
 // Respect prefers-reduced-motion
 const mm = gsap.matchMedia();
@@ -30,6 +31,7 @@ function ShopProviders({children}: {children: React.ReactNode}) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <MaintenanceGate>
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/shop" element={<ShopProviders><ShopPage /></ShopProviders>} />
@@ -37,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/order/confirmed" element={<ShopProviders><OrderConfirmed /></ShopProviders>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </MaintenanceGate>
     </BrowserRouter>
   </StrictMode>,
 );

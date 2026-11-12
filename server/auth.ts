@@ -39,6 +39,28 @@ export async function isValidSession(token: string | undefined): Promise<boolean
   return equals(signature, await sign(expires))
 }
 
+// Maintenance unlock pass. Signed over a different payload than the admin
+// session, so an unlock cookie can never be used as an admin login.
+export const UNLOCK_COOKIE = 'n9_unlock'
+
+export async function createUnlockToken(): Promise<string> {
+  const expires = String(Date.now() + ADMIN_COOKIE_MAX_AGE * 1000)
+  return `${expires}.${await sign(`unlock:${expires}`)}`
+}
+
+export async function isValidUnlockToken(token: string | undefined): Promise<boolean> {
+  if (!token) return false
+  const [expires, signature] = token.split('.')
+  if (!expires || !signature || !/^\d+$/.test(expires) || Number(expires) < Date.now()) return false
+  return equals(signature, await sign(`unlock:${expires}`))
+}
+
+export function maintenancePasswordMatches(input: string | undefined): boolean {
+  const expected = process.env.MAINTENANCE_PASSWORD
+  if (!expected || !input) return false
+  return equals(input, expected)
+}
+
 export function passwordMatches(input: string | undefined): boolean {
   const expected = process.env.ADMIN_PASSWORD
   if (!expected || !input) return false
