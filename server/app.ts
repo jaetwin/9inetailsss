@@ -20,6 +20,7 @@ import {
   type StoredProduct,
 } from './catalogue.js'
 import { stripeFetch, stripeTaxActive, TAX_CODE_CLOTHING, TAX_CODE_SHIPPING, verifyStripeEvent } from './stripe.js'
+import { fetchTapstitchSpecsFor } from './tapstitch.js'
 import { readTapstitchExport } from './xlsx.js'
 
 type Env = { Bindings: Record<string, string | undefined> }
@@ -283,7 +284,9 @@ app.post('/api/admin/import/tapstitch', requireAdmin, async (c) => {
   if (!chosen.size) return c.json({ error: 'Select at least one design to import.' }, 400)
   try {
     const designs = readTapstitchExport(decodeUpload(body?.file)).filter((design) => chosen.has(design.designId))
-    const result = await importTapstitchDesigns(designs, async (dataUrl) => (await saveImage(dataUrl)).url)
+    // Best effort: a design Tapstitch's catalogue can't describe still imports.
+    const specs = await fetchTapstitchSpecsFor(designs.map((design) => design.productCode))
+    const result = await importTapstitchDesigns(designs, async (dataUrl) => (await saveImage(dataUrl)).url, specs)
     return c.json(result)
   } catch (error) {
     return c.json({ error: error instanceof Error ? error.message : 'Could not import that file.' }, 400)

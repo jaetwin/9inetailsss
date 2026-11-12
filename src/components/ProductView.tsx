@@ -148,7 +148,8 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
   const needsSelection = (colors.length > 1 && !selectedColor) || (sizes.length > 0 && !selectedSize);
 
   const { mainText, sizeRows, htmlSizeTable } = parseDescription(product.descriptionHtml ?? product.description ?? '');
-  const activeSizeTable = htmlSizeTable ?? sizeRows;
+  // A chart imported from Tapstitch wins over one written into the description.
+  const activeSizeTable = product.sizeChart?.rows?.length ? product.sizeChart : htmlSizeTable ?? sizeRows;
 
   return (
     <AnimatePresence>

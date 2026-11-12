@@ -19,6 +19,7 @@ export interface ApiProduct {
   options?: { name: string; values: string[] }
   defaultOption?: string
   colors?: { name: string; id?: string; sizes?: string[]; swatch?: string }[]
+  sizeChart?: { headers: string[]; rows: { size: string; values: string[] }[] }
   featured?: boolean
   published?: boolean
 }
@@ -85,6 +86,7 @@ export function toDisplayProduct(product: ApiProduct, index: number) {
     },
     variants: { edges: variants.map((node) => ({ node })) },
     defaultOption: product.defaultOption,
+    sizeChart: product.sizeChart,
     colorSwatches: Object.fromEntries(colors.filter((c) => c.swatch).map((c) => [c.name, c.swatch!])) as Record<string, string>,
   }
 }

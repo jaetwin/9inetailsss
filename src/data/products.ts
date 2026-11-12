@@ -45,6 +45,8 @@ export interface Product {
   options?: { name: string; values: string[] }
   defaultOption?: string
   colors?: ProductColor[]
+  /** Garment measurements per size, shown as the SIZE GUIDE on the product page. */
+  sizeChart?: { headers: string[]; rows: { size: string; values: string[] }[] }
   /** Set on pieces imported from a Tapstitch export. */
   tapstitch?: { designId: string; productCode: string }
   featured?: boolean
