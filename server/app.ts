@@ -6,7 +6,7 @@ import type { Context, Next } from 'hono'
 import { FREE_SHIPPING_AT, SHIPPING_FLAT, SHIPPING_COUNTRIES } from '../src/data/products.js'
 import { ADMIN_COOKIE, ADMIN_COOKIE_MAX_AGE, adminConfigured, createSession, isValidSession, passwordMatches } from './auth.js'
 import { readImage, saveImage } from './images.js'
-import { listOrders, recordPendingOrder, recordStripeSession, type OrderAddress, type OrderItem } from './orders.js'
+import { listOrders, recordPendingOrder, recordStripeSession, removeOrder, type OrderAddress, type OrderItem } from './orders.js'
 import {
   createProduct,
   deleteProduct,
@@ -322,6 +322,13 @@ app.get('/api/images/:id', async (c) => {
 // ── Orders ───────────────────────────────────────────────────────────────────
 
 app.get('/api/admin/orders', requireAdmin, async (c) => c.json({ orders: await listOrders() }))
+
+// For orders cancelled or refunded in Stripe. Refunds still happen in Stripe;
+// this only takes the order off the fulfilment list.
+app.delete('/api/admin/orders/:id', requireAdmin, async (c) => {
+  const removed = await removeOrder(c.req.param('id') ?? '')
+  return removed ? c.json({ ok: true }) : c.json({ error: 'That order is already gone.' }, 404)
+})
 
 // Checkout capture can miss an order if the buyer closes the tab before Stripe
 // redirects them back, so the owner can pull the last 50 paid sessions instead.

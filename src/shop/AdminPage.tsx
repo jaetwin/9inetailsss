@@ -539,6 +539,14 @@ export default function AdminPage() {
     }
   }
 
+  async function removeOrder(order: AdminOrder) {
+    const who = order.email ?? order.customerName ?? 'this buyer'
+    if (!window.confirm(`Remove the ${money2(order.total)} order from ${who}? It won't come back from Stripe. Refund it in Stripe first if needed.`)) return
+    const response = await fetch(`/api/admin/orders/${encodeURIComponent(order.id)}`, { method: 'DELETE' })
+    setOrderNotice(response.ok ? 'Order removed.' : 'Could not remove that order.')
+    await loadOrders()
+  }
+
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((current) => ({ ...current, [key]: value }))
 
   const paidOrders = orders.filter((order) => order.status === 'paid')
@@ -858,6 +866,13 @@ export default function AdminPage() {
                       className="border border-[var(--whisper)]/40 px-3 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--bone)] transition-colors hover:border-[var(--gold)]"
                     >
                       Copy for Tapstitch
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeOrder(order)}
+                      className="px-2 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:text-[var(--blood-bright)]"
+                    >
+                      Remove
                     </button>
                   </div>
                 </div>

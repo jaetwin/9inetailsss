@@ -105,6 +105,9 @@ export async function recordStripeSession(input: PaidOrderInput): Promise<void> 
   const db = await getDb()
   const rows = await db.query<Row>('SELECT * FROM orders WHERE id = ?', [input.id])
   const existing = rows[0]
+  // The owner removed this order (cancelled or refunded in Stripe): keep it
+  // removed even when Stripe resends the event or "Import from Stripe" runs.
+  if (existing?.status === 'removed') return
 
   // Keep the items captured at checkout (they carry the exact sizes) and only
   // fall back to Stripe's line items when the row was never created.
@@ -150,6 +153,17 @@ export async function recordStripeSession(input: PaidOrderInput): Promise<void> 
 
 export async function listOrders(): Promise<Order[]> {
   const db = await getDb()
-  const rows = await db.query<Row>('SELECT * FROM orders ORDER BY COALESCE(paid_at, created_at) DESC LIMIT 200')
+  const rows = await db.query<Row>(
+    "SELECT * FROM orders WHERE status <> 'removed' ORDER BY COALESCE(paid_at, created_at) DESC LIMIT 200",
+  )
   return rows.map(toOrder)
+}
+
+/** Hides an order from /admin. The row stays so Stripe can't bring it back. */
+export async function removeOrder(id: string): Promise<boolean> {
+  const db = await getDb()
+  const rows = await db.query<Row>("SELECT id FROM orders WHERE id = ? AND status <> 'removed'", [id])
+  if (!rows[0]) return false
+  await db.run("UPDATE orders SET status = 'removed' WHERE id = ?", [id])
+  return true
 }
