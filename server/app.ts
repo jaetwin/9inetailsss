@@ -269,8 +269,11 @@ app.post('/api/admin/login', async (c) => {
   return c.json({ ok: true })
 })
 
+// Signing out ends every pass this browser holds, so it is locked out of the
+// site too while maintenance is on.
 app.post('/api/admin/logout', (c) => {
   deleteCookie(c, ADMIN_COOKIE, { path: '/' })
+  deleteCookie(c, UNLOCK_COOKIE, { path: '/' })
   return c.json({ ok: true })
 })
 
