@@ -486,7 +486,7 @@ export default function AdminPage() {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ file: importFile.data, designIds: [...chosen] }),
     })
-    const body = (await response.json().catch(() => ({}))) as { created?: string[]; updated?: string[]; error?: string }
+    const body = (await response.json().catch(() => ({}))) as { created?: string[]; updated?: string[]; detailed?: number; error?: string }
     setImportBusy(false)
     if (!response.ok) {
       setImportError(body.error ?? 'Could not import those designs.')
@@ -501,6 +501,7 @@ export default function AdminPage() {
       message: [
         created ? `${created} imported as drafts. Add a price and photo, then tick them and choose Go live.` : '',
         updated ? `${updated} refreshed with Tapstitch's latest colours and sizes.` : '',
+        body.detailed ? `${body.detailed} got a description and size chart from Tapstitch.` : '',
       ]
         .filter(Boolean)
         .join(' '),

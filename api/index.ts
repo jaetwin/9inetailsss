@@ -12,7 +12,8 @@ import { app } from '../server/app.js'
 //   Request and expects a Response, which is exactly what Hono's app.fetch
 //   takes and returns. A plain default-exported function is called Node-style,
 //   with (req, res), instead.
-export const config = { runtime: 'nodejs' }
+// 60s: a Tapstitch import looks up each design's details on tapstitch.com.
+export const config = { runtime: 'nodejs', maxDuration: 60 }
 
 const handler = (request: Request) => app.fetch(request)
 

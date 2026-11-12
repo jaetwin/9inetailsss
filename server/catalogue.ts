@@ -1,6 +1,7 @@
 import { CATEGORY_KEYS, type Category, type Product, type ProductColor } from '../src/data/products.js'
 import { getDb } from './db.js'
 import { deleteImageByUrl } from './images.js'
+import type { TapstitchSpecs } from './tapstitch.js'
 import type { TapstitchDesign } from './xlsx.js'
 
 export type StoredProduct = Product & { published: boolean }
@@ -30,6 +31,35 @@ type Row = {
   tapstitch_id?: string | null
   tapstitch_code?: string | null
   images?: string | null
+  size_chart?: string | null
+}
+
+type SizeChart = NonNullable<Product['sizeChart']>
+
+function cleanSizeChart(value: unknown): SizeChart | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const chart = value as { headers?: unknown; rows?: unknown }
+  const headers = Array.isArray(chart.headers) ? chart.headers.map((h) => text(h, 40)).slice(0, 8) : []
+  const rows = Array.isArray(chart.rows)
+    ? chart.rows
+        .filter((row): row is { size?: unknown; values?: unknown } => Boolean(row) && typeof row === 'object')
+        .map((row) => ({
+          size: text(row.size, 10),
+          values: Array.isArray(row.values) ? row.values.map((v) => text(v, 12)).slice(0, headers.length) : [],
+        }))
+        .filter((row) => row.size)
+        .slice(0, 12)
+    : []
+  return headers.length && rows.length ? { headers, rows } : undefined
+}
+
+function parseSizeChart(value: string | null | undefined): SizeChart | undefined {
+  if (!value) return undefined
+  try {
+    return cleanSizeChart(JSON.parse(value))
+  } catch {
+    return undefined
+  }
 }
 
 function parseList(value: string | null | undefined): string[] {
@@ -99,6 +129,7 @@ function toProduct(row: Row): StoredProduct {
     options: row.option_name && values.length ? { name: row.option_name, values } : undefined,
     defaultOption: row.default_option ?? undefined,
     colors: colors.length ? colors : undefined,
+    sizeChart: parseSizeChart(row.size_chart),
     tapstitch: row.tapstitch_id ? { designId: row.tapstitch_id, productCode: row.tapstitch_code ?? '' } : undefined,
     featured: Boolean(Number(row.featured)),
     published: Boolean(Number(row.published)),
@@ -151,6 +182,8 @@ export interface ProductInput {
   defaultOption?: string
   /** Undefined keeps a piece's current colours on update. */
   colors?: ProductColor[]
+  /** Undefined keeps a piece's current size chart on update. */
+  sizeChart?: SizeChart
   featured: boolean
   published: boolean
 }
@@ -230,6 +263,7 @@ export function validateProduct(body: unknown): Validation {
       optionValues,
       defaultOption: defaultOption || undefined,
       colors: Array.isArray(input.colors) ? cleanColors(input.colors) : undefined,
+      sizeChart: input.sizeChart === undefined ? undefined : cleanSizeChart(input.sizeChart),
       featured: Boolean(input.featured),
       published,
     },
@@ -243,7 +277,7 @@ async function nextPosition(): Promise<number> {
 }
 
 const COLUMN_LIST =
-  'slug, name, price, compare_at, category, image, badge, short, description, details, materials, option_name, option_values, default_option, featured, published, colors, tapstitch_id, tapstitch_code, images'
+  'slug, name, price, compare_at, category, image, badge, short, description, details, materials, option_name, option_values, default_option, featured, published, colors, tapstitch_id, tapstitch_code, images, size_chart'
 
 function columns(value: ProductInput, tapstitch: Product['tapstitch'] | undefined) {
   return [
@@ -267,13 +301,14 @@ function columns(value: ProductInput, tapstitch: Product['tapstitch'] | undefine
     tapstitch?.designId ?? null,
     tapstitch?.productCode ?? null,
     value.images.length ? JSON.stringify(value.images) : null,
+    value.sizeChart ? JSON.stringify(value.sizeChart) : null,
   ]
 }
 
 async function insertProduct(value: ProductInput, tapstitch?: Product['tapstitch']) {
   const db = await getDb()
   await db.run(
-    `INSERT INTO products (${COLUMN_LIST}, position, created_at) VALUES (${Array(22).fill('?').join(', ')})`,
+    `INSERT INTO products (${COLUMN_LIST}, position, created_at) VALUES (${Array(23).fill('?').join(', ')})`,
     [...columns(value, tapstitch), await nextPosition(), Date.now()],
   )
 }
@@ -294,9 +329,10 @@ export async function updateProduct(slug: string, value: ProductInput): Promise<
   }
 
   const colors = value.colors ?? existing.colors ?? []
+  const sizeChart = value.sizeChart ?? existing.sizeChart
   const assignments = COLUMN_LIST.split(', ').map((column) => `${column} = ?`).join(', ')
   // The Tapstitch link is never edited by hand; it stays as imported.
-  await db.run(`UPDATE products SET ${assignments} WHERE slug = ?`, [...columns({ ...value, colors }, existing.tapstitch), slug])
+  await db.run(`UPDATE products SET ${assignments} WHERE slug = ?`, [...columns({ ...value, colors, sizeChart }, existing.tapstitch), slug])
   // Colours removed in the editor take their swatch pictures with them.
   await deleteSwatches((existing.colors ?? []).filter((old) => !colors.some((kept) => kept.swatch === old.swatch)))
   return (await findProduct(value.slug))!
@@ -363,12 +399,17 @@ async function uniqueSlug(base: string): Promise<string> {
 export async function importTapstitchDesigns(
   designs: TapstitchDesign[],
   saveSwatch: (dataUrl: string) => Promise<string>,
-): Promise<{ created: string[]; updated: string[] }> {
+  specs: Map<string, TapstitchSpecs> = new Map(),
+): Promise<{ created: string[]; updated: string[]; detailed: number }> {
   const db = await getDb()
   const created: string[] = []
   const updated: string[] = []
+  let detailed = 0
 
   for (const design of designs) {
+    // Fabric, fit, description and size chart from Tapstitch's catalogue.
+    const spec = specs.get(design.productCode)
+    if (spec) detailed++
     const existing = await findByTapstitchId(design.designId)
     const previous = existing?.colors ?? []
 
@@ -394,6 +435,26 @@ export async function importTapstitchDesigns(
           existing.slug,
         ],
       )
+      // Only fill what is still empty, so the owner's own words are never replaced.
+      if (spec) {
+        await db.run(
+          `UPDATE products SET
+             short = CASE WHEN short = '' THEN ? ELSE short END,
+             description = CASE WHEN description = '' THEN ? ELSE description END,
+             details = CASE WHEN details = '' OR details = '[]' THEN ? ELSE details END,
+             materials = CASE WHEN materials = '' THEN ? ELSE materials END,
+             size_chart = COALESCE(size_chart, ?)
+           WHERE slug = ?`,
+          [
+            spec.short,
+            spec.description,
+            JSON.stringify(spec.details),
+            spec.materials,
+            spec.sizeChart ? JSON.stringify(spec.sizeChart) : null,
+            existing.slug,
+          ],
+        )
+      }
       updated.push(existing.slug)
       continue
     }
@@ -407,10 +468,11 @@ export async function importTapstitchDesigns(
         category: guessCategory(design.name),
         image: '',
         images: [],
-        short: '',
-        description: '',
-        details: [],
-        materials: '',
+        short: spec?.short ?? '',
+        description: spec?.description ?? '',
+        details: spec?.details ?? [],
+        materials: spec?.materials ?? '',
+        sizeChart: spec?.sizeChart,
         optionName: design.sizes.length ? 'Size' : undefined,
         optionValues: design.sizes,
         defaultOption: defaultSize(design.sizes),
@@ -423,5 +485,5 @@ export async function importTapstitchDesigns(
     created.push(slug)
   }
 
-  return { created, updated }
+  return { created, updated, detailed }
 }
