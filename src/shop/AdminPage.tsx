@@ -302,13 +302,36 @@ export default function AdminPage() {
     setOrders(Array.isArray(body.orders) ? body.orders : [])
   }, [])
 
+  const [maintenance, setMaintenance] = useState<boolean | null>(null)
+  const [maintenanceBusy, setMaintenanceBusy] = useState(false)
+
+  async function toggleMaintenance() {
+    const next = !maintenance
+    if (next && !window.confirm('Close the site for maintenance? Visitors will only see the lock page until you turn it off.')) return
+    setMaintenanceBusy(true)
+    const response = await fetch('/api/admin/maintenance', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ on: next }),
+    })
+    setMaintenanceBusy(false)
+    if (response.ok) setMaintenance(next)
+    setNotice(
+      response.ok
+        ? { kind: 'ok', message: next ? 'Maintenance is on: the site is closed to visitors.' : 'Maintenance is off: the site is open.' }
+        : { kind: 'error', message: 'Could not change maintenance mode.' },
+    )
+  }
+
   useEffect(() => {
     void (async () => {
-      const [me, cfg] = await Promise.all([
+      const [me, cfg, mode] = await Promise.all([
         fetch('/api/admin/me').then((r) => r.json()).catch(() => ({ admin: false })),
         fetch('/api/config').then((r) => r.json()).catch(() => null),
+        fetch('/api/maintenance').then((r) => r.json()).catch(() => null),
       ])
       setConfig(cfg)
+      setMaintenance(typeof mode?.on === 'boolean' ? mode.on : null)
       if ((me as { admin?: boolean }).admin) {
         setStatus('in')
         await loadRows()
@@ -704,6 +727,30 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {maintenance !== null && (
+        <div
+          className={`mt-6 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 ${
+            maintenance ? 'border-[var(--blood)]/60 bg-[var(--blood)]/10' : 'border-[var(--whisper)]/30 bg-[var(--ash)]/30'
+          }`}
+        >
+          <span className="font-sans text-[11px] uppercase tracking-[0.2em] text-[var(--parchment)]">
+            Maintenance mode:{' '}
+            <span className={maintenance ? 'text-[var(--blood-bright)]' : 'text-[var(--gold-bright)]'}>
+              {maintenance ? 'On — site closed to visitors' : 'Off — site open'}
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={toggleMaintenance}
+            disabled={maintenanceBusy}
+            className={`px-4 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.2em] transition-colors disabled:opacity-40 ${
+              maintenance ? 'bg-[var(--bone)] text-[var(--void)] hover:bg-[var(--gold)]' : 'border border-[var(--blood)]/60 text-[var(--blood-bright)] hover:bg-[var(--blood)]/20'
+            }`}
+          >
+            {maintenanceBusy ? 'Saving…' : maintenance ? 'Open the site' : 'Turn maintenance on'}
+          </button>
+        </div>
+      )}
       {config && !config.paymentsConfigured && (
         <p className="mt-6 border border-[var(--gold)]/40 bg-[var(--ash)]/60 px-4 py-3 font-sans text-[11px] leading-relaxed tracking-[0.05em] text-[var(--parchment)]">
           Checkout is not connected — add STRIPE_SECRET_KEY to take payments.

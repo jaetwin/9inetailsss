@@ -16,7 +16,6 @@ import { CartProvider } from './CartContext';
 import Checkout from './components/Checkout';
 import EmailSignup from './components/EmailSignup';
 import { ToastProvider } from './components/Toast';
-import MaintenancePage from './components/MaintenancePage';
 
 interface ErrorBoundaryProps { children: React.ReactNode; fallback: React.ReactNode; }
 interface ErrorBoundaryState { hasError: boolean; }
@@ -32,13 +31,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-const isMaintenanceMode = import.meta.env.VITE_MAINTENANCE === 'true';
+// Maintenance mode is handled for every page by MaintenanceGate (src/main.tsx).
 
 export default function App() {
   const [showRoom2, setShowRoom2] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [isEmailOpen, setIsEmailOpen] = useState(false);
-  const [isUnlocked, setIsUnlocked] = useState(!isMaintenanceMode);
   const [isMenuOverlayOpen, setIsMenuOverlayOpen] = useState(false);
 
   const [isMuted, setIsMuted] = useState(() => {
@@ -83,14 +81,6 @@ export default function App() {
     }
   };
 
-  if (isMaintenanceMode && !isUnlocked) {
-    return (
-      <>
-        <Cursor />
-        <MaintenancePage onUnlock={() => setIsUnlocked(true)} />
-      </>
-    );
-  }
 
   return (
     <ToastProvider>
