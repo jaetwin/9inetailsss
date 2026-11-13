@@ -22,6 +22,7 @@ interface StoredProduct {
   defaultOption?: string
   colors?: ProductColor[]
   tapstitch?: { designId: string; productCode: string }
+  groupParent?: string
   featured?: boolean
   published?: boolean
 }
@@ -414,6 +415,42 @@ export default function AdminPage() {
     await loadRows()
   }
 
+  // Groups: several pieces shown as one product, each piece one of its colours.
+  const [groupLead, setGroupLead] = useState('')
+
+  async function groupSelected(slugs: string[]) {
+    const lead = slugs.includes(groupLead) ? groupLead : slugs[0]
+    const leadName = rows.find((p) => p.slug === lead)?.name ?? lead
+    setBulkBusy(true)
+    const response = await fetch('/api/admin/products/group', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ lead, members: slugs.filter((s) => s !== lead) }),
+    })
+    const body = (await response.json().catch(() => ({}))) as { grouped?: string[]; error?: string }
+    setBulkBusy(false)
+    setNotice(
+      response.ok
+        ? {
+            kind: 'ok',
+            message: `Grouped ${body.grouped?.length ?? 0} piece${body.grouped?.length === 1 ? '' : 's'} into “${leadName}”. The shop shows it as one product with each piece as a colour; its name, price and live state are used.`,
+          }
+        : { kind: 'error', message: body.error ?? 'Could not group those pieces.' },
+    )
+    setSelected(new Set())
+    await loadRows()
+  }
+
+  async function ungroup(slug: string) {
+    const response = await fetch('/api/admin/products/ungroup', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slugs: [slug] }),
+    })
+    setNotice(response.ok ? { kind: 'ok', message: 'Ungrouped. Each piece shows on its own again if it is live.' } : { kind: 'error', message: 'Could not ungroup.' })
+    await loadRows()
+  }
+
   async function bulk(action: 'publish' | 'unpublish' | 'delete', slugs: string[]) {
     if (!slugs.length) return
     const what = slugs.length === 1 ? 'this piece' : `${slugs.length} pieces`
@@ -577,6 +614,11 @@ export default function AdminPage() {
   const isLive = (product: StoredProduct) => product.published !== false
   const liveCount = rows.filter(isLive).length
   const visible = rows.filter((product) => (filter === 'all' ? true : filter === 'live' ? isLive(product) : !isLive(product)))
+  const groupSize = (slug: string) => rows.filter((p) => p.groupParent === slug).length
+  // Grouped pieces are listed right under the piece they're grouped into.
+  const orderedVisible = visible
+    .filter((p) => !p.groupParent || !visible.some((lead) => lead.slug === p.groupParent))
+    .flatMap((p) => [p, ...visible.filter((member) => member.groupParent === p.slug)])
   const visibleSelected = visible.filter((product) => selected.has(product.slug)).map((product) => product.slug)
   const allVisibleSelected = visible.length > 0 && visibleSelected.length === visible.length
 
@@ -1019,6 +1061,32 @@ export default function AdminPage() {
                   <span className="mr-auto font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">
                     {visibleSelected.length} selected
                   </span>
+                  {visibleSelected.length >= 2 && (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <label className="font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)]">
+                        Show as{' '}
+                        <select
+                          value={visibleSelected.includes(groupLead) ? groupLead : visibleSelected[0]}
+                          onChange={(event) => setGroupLead(event.target.value)}
+                          className="ml-1 max-w-[220px] border border-[var(--whisper)]/40 bg-[var(--void)] px-2 py-1.5 font-sans text-[11px] normal-case tracking-normal text-[var(--bone)]"
+                        >
+                          {visibleSelected.map((slug) => (
+                            <option key={slug} value={slug}>
+                              {rows.find((p) => p.slug === slug)?.name ?? slug}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={bulkBusy}
+                        onClick={() => groupSelected(visibleSelected)}
+                        className="border border-[var(--gold)]/60 px-4 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--gold-bright)] transition-colors hover:bg-[var(--gold)]/15 disabled:opacity-40"
+                      >
+                        Group as one
+                      </button>
+                    </span>
+                  )}
                   <button
                     type="button"
                     disabled={bulkBusy}
@@ -1052,8 +1120,8 @@ export default function AdminPage() {
                 </p>
               ) : (
             <ul className="divide-y divide-[var(--whisper)]/25 border-y border-[var(--whisper)]/25">
-              {visible.map((product) => (
-                <li key={product.slug} className="flex flex-wrap items-center gap-3 py-4 sm:gap-4">
+              {orderedVisible.map((product) => (
+                <li key={product.slug} className={`flex flex-wrap items-center gap-3 py-4 sm:gap-4 ${product.groupParent ? 'pl-6 sm:pl-10' : ''}`}>
                   <input
                     type="checkbox"
                     aria-label={`Select ${product.name}`}
@@ -1080,6 +1148,15 @@ export default function AdminPage() {
                       {product.featured && (
                         <span className="border border-[var(--gold)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">Featured</span>
                       )}
+                      {product.groupParent ? (
+                        <span className="border border-[var(--whisper)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--parchment)]">
+                          In group: {rows.find((p) => p.slug === product.groupParent)?.name ?? product.groupParent}
+                        </span>
+                      ) : groupSize(product.slug) > 0 ? (
+                        <span className="border border-[var(--gold)]/50 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--gold-bright)]">
+                          Group of {groupSize(product.slug) + 1}
+                        </span>
+                      ) : null}
                       {product.price < 1 && (
                         <span className="border border-[var(--blood)]/60 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--blood-bright)]">No price</span>
                       )}
@@ -1108,6 +1185,14 @@ export default function AdminPage() {
                     )}
                   </span>
                   <span className="ml-auto flex shrink-0 items-center gap-1">
+                    {(product.groupParent || groupSize(product.slug) > 0) && (
+                      <button
+                        onClick={() => ungroup(product.slug)}
+                        className="px-3 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--faded)] transition-colors hover:text-[var(--bone)]"
+                      >
+                        Ungroup
+                      </button>
+                    )}
                     <button
                       onClick={() => bulk(isLive(product) ? 'unpublish' : 'publish', [product.slug])}
                       disabled={bulkBusy}

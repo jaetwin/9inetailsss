@@ -32,6 +32,7 @@ type Row = {
   tapstitch_code?: string | null
   images?: string | null
   size_chart?: string | null
+  group_parent?: string | null
 }
 
 type SizeChart = NonNullable<Product['sizeChart']>
@@ -131,22 +132,99 @@ function toProduct(row: Row): StoredProduct {
     colors: colors.length ? colors : undefined,
     sizeChart: parseSizeChart(row.size_chart),
     tapstitch: row.tapstitch_id ? { designId: row.tapstitch_id, productCode: row.tapstitch_code ?? '' } : undefined,
+    groupParent: row.group_parent ?? undefined,
     featured: Boolean(Number(row.featured)),
     published: Boolean(Number(row.published)),
   }
 }
 
+// ── Groups ───────────────────────────────────────────────────────────────────
+// Tapstitch makes one design per garment, so "pink hoodie with design A" and
+// "black hoodie with design B" are two pieces. Grouping shows them as one
+// product: each piece becomes a colour of the lead piece, with its own photos
+// and sizes, and each order line keeps the exact piece's Tapstitch link.
+
+function mergeGroup(lead: StoredProduct, members: StoredProduct[]): StoredProduct {
+  if (!members.length) return lead
+  const colors: ProductColor[] = []
+  const sizes: string[] = []
+  for (const piece of [lead, ...members]) {
+    const photos = piece.images?.length ? piece.images : piece.image ? [piece.image] : []
+    // A piece without colours of its own is offered under its own name.
+    for (const color of piece.colors?.length ? piece.colors : [{ name: piece.name }]) {
+      const name = colors.some((c) => c.name === color.name) ? `${color.name} – ${piece.name}` : color.name
+      const pieceSizes = color.sizes?.length ? color.sizes : piece.options?.values ?? []
+      colors.push({ ...color, name, sizes: pieceSizes.length ? pieceSizes : undefined, from: piece.slug, images: photos, tapstitch: piece.tapstitch })
+      for (const size of pieceSizes) if (!sizes.includes(size)) sizes.push(size)
+    }
+  }
+  return { ...lead, colors, options: sizes.length ? { name: lead.options?.name ?? 'Size', values: sizes } : lead.options }
+}
+
+async function membersOf(leads: string[]): Promise<Map<string, StoredProduct[]>> {
+  const groups = new Map<string, StoredProduct[]>()
+  if (!leads.length) return groups
+  const db = await getDb()
+  const rows = await db.query<Row>(
+    `SELECT * FROM products WHERE group_parent IN (${leads.map(() => '?').join(', ')}) ORDER BY position ASC, created_at ASC`,
+    leads,
+  )
+  for (const member of rows.map(toProduct)) {
+    groups.set(member.groupParent!, [...(groups.get(member.groupParent!) ?? []), member])
+  }
+  return groups
+}
+
+/**
+ * Admin (includeUnpublished): every piece as stored. Shop: live pieces that
+ * aren't grouped under another, each with its group merged in.
+ */
 export async function listProducts(includeUnpublished = false): Promise<StoredProduct[]> {
   const db = await getDb()
-  const where = includeUnpublished ? '' : 'WHERE published = 1'
-  const rows = await db.query<Row>(`SELECT * FROM products ${where} ORDER BY position ASC, created_at ASC`)
-  return rows.map(toProduct)
+  if (includeUnpublished) {
+    const rows = await db.query<Row>('SELECT * FROM products ORDER BY position ASC, created_at ASC')
+    return rows.map(toProduct)
+  }
+  const rows = await db.query<Row>('SELECT * FROM products WHERE published = 1 AND group_parent IS NULL ORDER BY position ASC, created_at ASC')
+  const leads = rows.map(toProduct)
+  const groups = await membersOf(leads.map((lead) => lead.slug))
+  return leads.map((lead) => mergeGroup(lead, groups.get(lead.slug) ?? []))
 }
 
 export async function findProduct(slug: string): Promise<StoredProduct | null> {
   const db = await getDb()
   const rows = await db.query<Row>('SELECT * FROM products WHERE slug = ?', [slug])
   return rows[0] ? toProduct(rows[0]) : null
+}
+
+/** A product as the shop sells it: live, not grouped under another, group merged in. */
+export async function findProductForSale(slug: string): Promise<StoredProduct | null> {
+  const product = await findProduct(slug)
+  if (!product || !product.published || product.groupParent) return null
+  return mergeGroup(product, (await membersOf([slug])).get(slug) ?? [])
+}
+
+/** Groups `members` under `lead`. A member's own members move to the lead too. */
+export async function groupProducts(lead: string, members: string[]): Promise<{ grouped: string[] }> {
+  const db = await getDb()
+  if (!(await findProduct(lead))) throw new Error('The piece to show could not be found.')
+  const grouped: string[] = []
+  await db.run('UPDATE products SET group_parent = NULL WHERE slug = ?', [lead])
+  for (const slug of new Set(members)) {
+    if (slug === lead || !(await findProduct(slug))) continue
+    await db.run('UPDATE products SET group_parent = ? WHERE group_parent = ?', [lead, slug])
+    await db.run('UPDATE products SET group_parent = ? WHERE slug = ?', [lead, slug])
+    grouped.push(slug)
+  }
+  return { grouped }
+}
+
+/** Takes pieces out of their group; ungrouping a lead releases its whole group. */
+export async function ungroupProducts(slugs: string[]): Promise<void> {
+  const db = await getDb()
+  for (const slug of slugs) {
+    await db.run('UPDATE products SET group_parent = NULL WHERE slug = ? OR group_parent = ?', [slug, slug])
+  }
 }
 
 async function findByTapstitchId(designId: string): Promise<StoredProduct | null> {
@@ -333,6 +411,8 @@ export async function updateProduct(slug: string, value: ProductInput): Promise<
   const assignments = COLUMN_LIST.split(', ').map((column) => `${column} = ?`).join(', ')
   // The Tapstitch link is never edited by hand; it stays as imported.
   await db.run(`UPDATE products SET ${assignments} WHERE slug = ?`, [...columns({ ...value, colors, sizeChart }, existing.tapstitch), slug])
+  // A renamed lead keeps its group.
+  if (value.slug !== slug) await db.run('UPDATE products SET group_parent = ? WHERE group_parent = ?', [value.slug, slug])
   // Colours removed in the editor take their swatch pictures with them.
   await deleteSwatches((existing.colors ?? []).filter((old) => !colors.some((kept) => kept.swatch === old.swatch)))
   return (await findProduct(value.slug))!
@@ -347,6 +427,8 @@ export async function deleteProduct(slug: string): Promise<boolean> {
   const existing = await findProduct(slug)
   if (!existing) return false
   await db.run('DELETE FROM products WHERE slug = ?', [slug])
+  // Pieces grouped under a deleted lead become standalone again.
+  await db.run('UPDATE products SET group_parent = NULL WHERE group_parent = ?', [slug])
   // Swatches are made per piece on import, so nothing else points at them.
   await deleteSwatches(existing.colors ?? [])
   return true

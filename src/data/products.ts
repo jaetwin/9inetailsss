@@ -25,6 +25,11 @@ export interface ProductColor {
   sizes?: string[]
   /** Small picture of the garment in this colour (/api/images/… or https). */
   swatch?: string
+  // Set only on a grouped product as the shop sees it (never stored): which
+  // piece this colour comes from, that piece's photos, and its Tapstitch link.
+  from?: string
+  images?: string[]
+  tapstitch?: { designId: string; productCode: string }
 }
 
 export interface Product {
@@ -49,6 +54,8 @@ export interface Product {
   sizeChart?: { headers: string[]; rows: { size: string; values: string[] }[] }
   /** Set on pieces imported from a Tapstitch export. */
   tapstitch?: { designId: string; productCode: string }
+  /** Slug of the piece this one is grouped under; grouped pieces show as that piece's colours. */
+  groupParent?: string
   featured?: boolean
   published?: boolean
 }

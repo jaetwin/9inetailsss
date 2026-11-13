@@ -18,7 +18,7 @@ export interface ApiProduct {
   materials: string
   options?: { name: string; values: string[] }
   defaultOption?: string
-  colors?: { name: string; id?: string; sizes?: string[]; swatch?: string }[]
+  colors?: { name: string; id?: string; sizes?: string[]; swatch?: string; images?: string[] }[]
   sizeChart?: { headers: string[]; rows: { size: string; values: string[] }[] }
   featured?: boolean
   published?: boolean
@@ -88,6 +88,8 @@ export function toDisplayProduct(product: ApiProduct, index: number) {
     defaultOption: product.defaultOption,
     sizeChart: product.sizeChart,
     colorSwatches: Object.fromEntries(colors.filter((c) => c.swatch).map((c) => [c.name, c.swatch!])) as Record<string, string>,
+    // Grouped products: each colour's own photos, shown when it is picked.
+    colorImages: Object.fromEntries(colors.filter((c) => c.images?.length).map((c) => [c.name, c.images!])) as Record<string, string[]>,
   }
 }
 

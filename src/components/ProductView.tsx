@@ -111,9 +111,12 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
     setTimeout(() => setIsCheckoutOpen(true), 400);
   };
 
-  const images: { url: string; altText: string }[] =
-    product.images?.edges?.map((e: any) => e.node) ??
-    (product.image ? [{ url: product.image, altText: product.name }] : []);
+  // In a grouped product each colour is its own piece with its own photos.
+  const colorPhotos: string[] | undefined = selectedColor ? product.colorImages?.[selectedColor] : undefined;
+  const images: { url: string; altText: string }[] = colorPhotos?.length
+    ? colorPhotos.map((url) => ({ url, altText: `${product.name} — ${selectedColor}` }))
+    : product.images?.edges?.map((e: any) => e.node) ??
+      (product.image ? [{ url: product.image, altText: product.name }] : []);
   const imageUrl = images[selectedImageIdx]?.url ?? product.image;
   const imageAlt = images[selectedImageIdx]?.altText || product.name || product.title;
   const productName = product.name || product.title;
@@ -273,7 +276,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                     {colors.map(color => {
                       const avail = variants.filter((v: any) => v.selectedOptions?.find((o: any) => o.name === 'Color')?.value === color).some((v: any) => v.availableForSale);
                       return (
-                        <button key={color} onClick={() => { setSelectedColor(color); setSelectedSize(null); }} disabled={!avail}
+                        <button key={color} onClick={() => { setSelectedColor(color); setSelectedSize(null); setSelectedImageIdx(0); }} disabled={!avail}
                           title={color}
                           className={`relative w-10 h-10 rounded-full border-2 transition-all duration-200 ${selectedColor === color ? 'border-[var(--bone)] scale-110' : 'border-[var(--whisper)]/30'} ${!avail ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
                           style={
@@ -426,7 +429,7 @@ export default function ProductView({ product, onClose }: ProductViewProps) {
                       {colors.map(color => {
                         const avail = variants.filter((v: any) => v.selectedOptions?.find((o: any) => o.name === 'Color')?.value === color).some((v: any) => v.availableForSale);
                         return (
-                          <button key={color} onClick={() => { setSelectedColor(color); setSelectedSize(null); }} title={color} disabled={!avail}
+                          <button key={color} onClick={() => { setSelectedColor(color); setSelectedSize(null); setSelectedImageIdx(0); }} title={color} disabled={!avail}
                             className={`relative w-8 h-8 rounded-full border-2 transition-all duration-200 ${selectedColor === color ? 'border-[var(--bone)] scale-110' : 'border-[var(--whisper)]/30 hover:border-[var(--whisper)]/80'} ${!avail ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
                             style={{ backgroundColor: colorToCSS(color) }}>
                             {!avail && <div className="absolute inset-0 flex items-center justify-center"><div className="w-full h-[1px] bg-[var(--faded)] rotate-45" /></div>}
