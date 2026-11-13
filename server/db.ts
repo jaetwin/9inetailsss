@@ -128,6 +128,7 @@ const PRODUCT_COLUMNS = {
   tapstitch_code: 'TEXT', // Tapstitch product code, e.g. UT0348
   images: 'TEXT', // JSON array of photo URLs; the first is also stored in `image`
   size_chart: 'TEXT', // JSON { headers, rows }, filled from Tapstitch on import
+  group_parent: 'TEXT', // slug of the piece this one is grouped under
 }
 
 async function addProductColumns(db: Db) {

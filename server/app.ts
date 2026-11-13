@@ -22,11 +22,13 @@ import { listOrders, recordPendingOrder, recordStripeSession, removeOrder, type 
 import {
   createProduct,
   deleteProduct,
-  findProduct,
+  findProductForSale,
+  groupProducts,
   importedDesigns,
   importTapstitchDesigns,
   listProducts,
   setPublished,
+  ungroupProducts,
   updateProduct,
   validateProduct,
   type StoredProduct,
@@ -242,9 +244,30 @@ app.get('/api/products', async (c) => {
 })
 
 app.get('/api/products/:slug', async (c) => {
-  const product = await findProduct(c.req.param('slug') ?? '')
-  if (!product || !product.published) return c.json({ error: 'Not found.' }, 404)
+  const product = await findProductForSale(c.req.param('slug') ?? '')
+  if (!product) return c.json({ error: 'Not found.' }, 404)
   return c.json({ product })
+})
+
+// Shows several pieces as one product (each piece becomes a colour of `lead`).
+app.post('/api/admin/products/group', requireAdmin, async (c) => {
+  const body = await c.req.json<{ lead?: unknown; members?: unknown }>().catch(() => null)
+  const lead = typeof body?.lead === 'string' ? body.lead : ''
+  const members = Array.isArray(body?.members) ? body.members.filter((s): s is string => typeof s === 'string').slice(0, 50) : []
+  if (!lead || !members.length) return c.json({ error: 'Pick the piece to show and at least one other piece.' }, 400)
+  try {
+    return c.json(await groupProducts(lead, members))
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Could not group those pieces.' }, 400)
+  }
+})
+
+app.post('/api/admin/products/ungroup', requireAdmin, async (c) => {
+  const body = await c.req.json<{ slugs?: unknown }>().catch(() => null)
+  const slugs = Array.isArray(body?.slugs) ? body.slugs.filter((s): s is string => typeof s === 'string').slice(0, 100) : []
+  if (!slugs.length) return c.json({ error: 'Select at least one piece.' }, 400)
+  await ungroupProducts(slugs)
+  return c.json({ ok: true })
 })
 
 // ── Admin ────────────────────────────────────────────────────────────────────
@@ -434,8 +457,9 @@ app.post('/api/checkout', async (c) => {
   const lines: Line[] = []
   for (const item of body.items) {
     const slug = typeof item.slug === 'string' ? item.slug : ''
-    const product = await findProduct(slug)
-    if (!product || !product.published || product.price < 1) {
+    // Grouped pieces are sold through their lead, as one of its colours.
+    const product = await findProductForSale(slug)
+    if (!product || product.price < 1) {
       return c.json({ error: 'One of the pieces in your bag is no longer available.' }, 400)
     }
     const quantity = Math.trunc(Number(item.quantity))
@@ -503,8 +527,13 @@ app.post('/api/checkout', async (c) => {
     color: color?.name,
     quantity,
     amount: product.price * quantity,
-    tapstitch: product.tapstitch
-      ? { designId: product.tapstitch.designId, productCode: product.tapstitch.productCode, colorId: color?.id }
+    // In a group, the colour carries the Tapstitch link of the exact piece bought.
+    tapstitch: (color?.tapstitch ?? product.tapstitch)
+      ? {
+          designId: (color?.tapstitch ?? product.tapstitch)!.designId,
+          productCode: (color?.tapstitch ?? product.tapstitch)!.productCode,
+          colorId: color?.id,
+        }
       : undefined,
   }))
   // Before tax; replaced by Stripe's final total once the order is paid.
