@@ -56,6 +56,8 @@ export interface Product {
   tapstitch?: { designId: string; productCode: string }
   /** Slug of the piece this one is grouped under; grouped pieces show as that piece's colours. */
   groupParent?: string
+  /** Slugs of the collections this piece is in (shown as tabs on /shop). */
+  collections?: string[]
   featured?: boolean
   published?: boolean
 }

@@ -1,5 +1,6 @@
 import { CATEGORY_KEYS, type Category, type Product, type ProductColor } from '../src/data/products.js'
 import { getDb } from './db.js'
+import { parseSlugs } from './collections.js'
 import { deleteImageByUrl } from './images.js'
 import type { TapstitchSpecs } from './tapstitch.js'
 import type { TapstitchDesign } from './xlsx.js'
@@ -33,6 +34,7 @@ type Row = {
   images?: string | null
   size_chart?: string | null
   group_parent?: string | null
+  collections?: string | null
 }
 
 type SizeChart = NonNullable<Product['sizeChart']>
@@ -133,6 +135,7 @@ function toProduct(row: Row): StoredProduct {
     sizeChart: parseSizeChart(row.size_chart),
     tapstitch: row.tapstitch_id ? { designId: row.tapstitch_id, productCode: row.tapstitch_code ?? '' } : undefined,
     groupParent: row.group_parent ?? undefined,
+    collections: parseSlugs(row.collections),
     featured: Boolean(Number(row.featured)),
     published: Boolean(Number(row.published)),
   }

@@ -116,6 +116,9 @@ async function migrate(db: Db) {
   await db.run(IMAGES_SCHEMA)
   await db.run(ORDERS_SCHEMA)
   await db.run('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+  await db.run(
+    "CREATE TABLE IF NOT EXISTS collections (slug TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', position INTEGER NOT NULL DEFAULT 0, created_at BIGINT NOT NULL)",
+  )
   await widenOrderTotal(db)
   await addProductColumns(db)
 }
@@ -129,6 +132,7 @@ const PRODUCT_COLUMNS = {
   images: 'TEXT', // JSON array of photo URLs; the first is also stored in `image`
   size_chart: 'TEXT', // JSON { headers, rows }, filled from Tapstitch on import
   group_parent: 'TEXT', // slug of the piece this one is grouped under
+  collections: 'TEXT', // JSON list of collection slugs this piece is in
 }
 
 async function addProductColumns(db: Db) {

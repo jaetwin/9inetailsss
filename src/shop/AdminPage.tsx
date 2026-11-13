@@ -23,6 +23,7 @@ interface StoredProduct {
   colors?: ProductColor[]
   tapstitch?: { designId: string; productCode: string }
   groupParent?: string
+  collections?: string[]
   featured?: boolean
   published?: boolean
 }
@@ -414,6 +415,52 @@ export default function AdminPage() {
     setNotice({ kind: 'ok', message: 'Piece deleted.' })
     await loadRows()
   }
+
+  // Collections: named sets of pieces shown as tabs on /shop.
+  const [collections, setCollections] = useState<{ slug: string; name: string; description: string }[]>([])
+  const [newCollection, setNewCollection] = useState({ name: '', description: '' })
+  const [bulkCollection, setBulkCollection] = useState('')
+
+  const loadCollections = useCallback(async () => {
+    const body = (await fetch('/api/collections').then((r) => r.json()).catch(() => ({}))) as { collections?: typeof collections }
+    setCollections(Array.isArray(body.collections) ? body.collections : [])
+  }, [])
+
+  useEffect(() => {
+    if (status === 'in') void loadCollections()
+  }, [status, loadCollections])
+
+  async function collectionRequest(method: string, path: string, body?: unknown, success?: string) {
+    const response = await fetch(path, { method, headers: { 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined })
+    const result = (await response.json().catch(() => ({}))) as { error?: string }
+    setNotice(response.ok ? (success ? { kind: 'ok', message: success } : null) : { kind: 'error', message: result.error ?? 'Could not update collections.' })
+    await Promise.all([loadCollections(), loadRows()])
+    return response.ok
+  }
+
+  const createCollection = async () => {
+    if (await collectionRequest('POST', '/api/admin/collections', newCollection, `Collection “${newCollection.name}” created. Add pieces by ticking them and choosing Add to collection.`)) {
+      setNewCollection({ name: '', description: '' })
+    }
+  }
+
+  const renameCollection = (collection: (typeof collections)[number]) => {
+    const name = window.prompt('Collection name', collection.name)
+    if (name === null) return
+    const description = window.prompt('Short description (shown on the shop tab)', collection.description)
+    if (description === null) return
+    void collectionRequest('PATCH', `/api/admin/collections/${collection.slug}`, { name, description }, 'Collection updated.')
+  }
+
+  const deleteCollection = (collection: (typeof collections)[number]) => {
+    if (!window.confirm(`Delete the “${collection.name}” collection? Its pieces stay in the shop; only the tab goes.`)) return
+    void collectionRequest('DELETE', `/api/admin/collections/${collection.slug}`, undefined, 'Collection deleted.')
+  }
+
+  const changeCollection = (collection: string, add: string[], remove: string[], success?: string) =>
+    collectionRequest('POST', `/api/admin/collections/${collection}/pieces`, { add, remove }, success)
+
+  const collectionName = (slug: string) => collections.find((c) => c.slug === slug)?.name ?? slug
 
   // Groups: several pieces shown as one product, each piece one of its colours.
   const [groupLead, setGroupLead] = useState('')
@@ -908,6 +955,70 @@ export default function AdminPage() {
       )}
 
       <section className="mt-10 border-t border-[var(--whisper)]/25 pt-8">
+        <p className="font-sans text-[11px] uppercase tracking-[0.3em] text-[var(--faded)]">Shop tabs</p>
+        <h2 className="mt-2 font-bebas text-[30px] uppercase leading-none">
+          Collections <span className="font-sans text-[15px] text-[var(--faded)]">{collections.length}</span>
+        </h2>
+        <p className="mt-2 max-w-[640px] font-serif text-[14px] italic leading-relaxed text-[var(--faded)]">
+          Each collection is a tab on /shop. A piece can be in several. Add pieces by ticking them in the list below and choosing
+          Add to collection, or from a piece's Edit panel. Only collections with a live piece show in the shop.
+        </p>
+        {collections.length > 0 && (
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {collections.map((collection) => (
+              <li key={collection.slug} className="flex items-center gap-2 border border-[var(--whisper)]/40 py-1.5 pl-3 pr-1">
+                <span className="font-sans text-[11px] uppercase tracking-[0.15em] text-[var(--bone)]">{collection.name}</span>
+                <span className="font-sans text-[10px] text-[var(--faded)]">
+                  {rows.filter((p) => p.collections?.includes(collection.slug)).length}
+                </span>
+                <a
+                  href={`/shop?collection=${collection.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-1 font-sans text-[10px] uppercase tracking-[0.15em] text-[var(--faded)] hover:text-[var(--gold-bright)]"
+                >
+                  View
+                </a>
+                <button type="button" onClick={() => renameCollection(collection)} className="px-1 font-sans text-[10px] uppercase tracking-[0.15em] text-[var(--faded)] hover:text-[var(--bone)]">
+                  Edit
+                </button>
+                <button type="button" aria-label={`Delete ${collection.name}`} onClick={() => deleteCollection(collection)} className="px-1.5 font-sans text-[13px] text-[var(--faded)] hover:text-[var(--blood-bright)]">
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void createCollection()
+          }}
+          className="mt-4 flex flex-wrap gap-2"
+        >
+          <input
+            className={`${input} max-w-[240px]`}
+            value={newCollection.name}
+            onChange={(event) => setNewCollection({ ...newCollection, name: event.target.value })}
+            placeholder="New collection, e.g. Easter Drop"
+          />
+          <input
+            className={`${input} max-w-[360px]`}
+            value={newCollection.description}
+            onChange={(event) => setNewCollection({ ...newCollection, description: event.target.value })}
+            placeholder="Short description (optional)"
+          />
+          <button
+            type="submit"
+            disabled={!newCollection.name.trim()}
+            className="bg-[var(--bone)] px-5 font-sans text-[11px] font-bold uppercase tracking-[0.25em] text-[var(--void)] transition-colors hover:bg-[var(--gold)] disabled:opacity-40"
+          >
+            Create
+          </button>
+        </form>
+      </section>
+
+      <section className="mt-10 border-t border-[var(--whisper)]/25 pt-8">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="font-sans text-[11px] uppercase tracking-[0.3em] text-[var(--faded)]">Fulfilment</p>
@@ -1087,6 +1198,45 @@ export default function AdminPage() {
                       </button>
                     </span>
                   )}
+                  {collections.length > 0 && (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={collections.some((c) => c.slug === bulkCollection) ? bulkCollection : collections[0].slug}
+                        onChange={(event) => setBulkCollection(event.target.value)}
+                        aria-label="Collection"
+                        className="max-w-[200px] border border-[var(--whisper)]/40 bg-[var(--void)] px-2 py-1.5 font-sans text-[11px] text-[var(--bone)]"
+                      >
+                        {collections.map((collection) => (
+                          <option key={collection.slug} value={collection.slug}>
+                            {collection.name}
+                          </option>
+                        ))}
+                      </select>
+                      {(['add', 'remove'] as const).map((mode) => {
+                        const target = collections.some((c) => c.slug === bulkCollection) ? bulkCollection : collections[0].slug
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            disabled={bulkBusy}
+                            onClick={async () => {
+                              const pieces = visibleSelected
+                              const ok = await changeCollection(
+                                target,
+                                mode === 'add' ? pieces : [],
+                                mode === 'remove' ? pieces : [],
+                                `${pieces.length} piece${pieces.length === 1 ? '' : 's'} ${mode === 'add' ? 'added to' : 'removed from'} “${collectionName(target)}”.`,
+                              )
+                              if (ok) setSelected(new Set())
+                            }}
+                            className="border border-[var(--whisper)]/40 px-3 py-2 font-sans text-[10px] uppercase tracking-[0.2em] text-[var(--bone)] transition-colors hover:border-[var(--bone)] disabled:opacity-40"
+                          >
+                            {mode === 'add' ? 'Add to collection' : 'Remove from it'}
+                          </button>
+                        )
+                      })}
+                    </span>
+                  )}
                   <button
                     type="button"
                     disabled={bulkBusy}
@@ -1157,6 +1307,11 @@ export default function AdminPage() {
                           Group of {groupSize(product.slug) + 1}
                         </span>
                       ) : null}
+                      {product.collections?.map((slug) => (
+                        <span key={slug} className="border border-[var(--whisper)]/40 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--faded)]">
+                          {collectionName(slug)}
+                        </span>
+                      ))}
                       {product.price < 1 && (
                         <span className="border border-[var(--blood)]/60 px-2 py-0.5 font-sans text-[9px] uppercase tracking-[0.2em] text-[var(--blood-bright)]">No price</span>
                       )}
@@ -1408,6 +1563,27 @@ export default function AdminPage() {
                     <span className="mt-1 block font-serif text-[12px] italic text-[var(--faded)]">
                       Buyers pick one of these. Removing a colour hides it; importing again brings it back.
                     </span>
+                  </div>
+                )}
+                {editing && collections.length > 0 && (
+                  <div>
+                    <span className={label}>Collections</span>
+                    <div className="flex flex-col gap-1.5">
+                      {collections.map((collection) => {
+                        const inIt = rows.find((p) => p.slug === editing)?.collections?.includes(collection.slug) ?? false
+                        return (
+                          <label key={collection.slug} className="flex items-center gap-2 font-sans text-[11px] uppercase tracking-[0.15em] text-[var(--parchment)]">
+                            <input
+                              type="checkbox"
+                              checked={inIt}
+                              onChange={() => void changeCollection(collection.slug, inIt ? [] : [editing], inIt ? [editing] : [])}
+                            />
+                            {collection.name}
+                          </label>
+                        )
+                      })}
+                    </div>
+                    <span className="mt-1 block font-serif text-[12px] italic text-[var(--faded)]">Saved as soon as you tick or untick.</span>
                   </div>
                 )}
                 {draft.tapstitch && (
