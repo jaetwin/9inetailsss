@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 
 import Checkout from '../components/Checkout'
 import ProductView from '../components/ProductView'
 import { useCart } from '../CartContext'
-import { fetchCatalogue, toDisplayProduct } from './api'
+import { fetchCatalogue, fetchCollections, toDisplayProduct, type ShopCollection } from './api'
 
 // A conventional storefront for people who would rather browse a grid than
 // scroll the 3D sanctuary. Same catalogue, same product modal, same cart.
@@ -15,9 +15,14 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const { cartItems, setIsCheckoutOpen } = useCart()
+  const [collections, setCollections] = useState<ShopCollection[]>([])
+  // ?collection=<slug> picks a tab, so each collection has a link to share.
+  const [params, setParams] = useSearchParams()
+  const activeSlug = params.get('collection') ?? ''
 
   useEffect(() => {
     let cancelled = false
+    fetchCollections().then((list) => !cancelled && setCollections(list))
     fetchCatalogue()
       .then((items) => {
         if (cancelled) return
@@ -30,6 +35,12 @@ export default function ShopPage() {
       cancelled = true
     }
   }, [])
+
+  // Only collections that have something to show get a tab.
+  const tabs = collections.filter((collection) => products.some((p) => p.collections?.includes(collection.slug)))
+  const active = tabs.find((collection) => collection.slug === activeSlug)
+  const shown = active ? products.filter((p) => p.collections?.includes(active.slug)) : products
+  const pick = (slug: string) => setParams(slug ? { collection: slug } : {}, { replace: true })
 
   return (
     <div className="native-cursor min-h-[100dvh] w-full bg-[var(--void)] text-[var(--bone)]">
@@ -49,17 +60,40 @@ export default function ShopPage() {
       </header>
 
       <main className="mx-auto max-w-[1400px] px-5 py-14 md:px-10 md:py-20">
-        <p className="font-sans text-[11px] tracking-[0.3em] uppercase text-[var(--blood)]">Collection 001</p>
-        <h1 className="mt-4 font-gothic text-[clamp(44px,7vw,86px)] leading-[0.9]">The Catalog</h1>
+        <p className="font-sans text-[11px] tracking-[0.3em] uppercase text-[var(--blood)]">{active ? 'Collection' : 'Collection 001'}</p>
+        <h1 className="mt-4 font-gothic text-[clamp(44px,7vw,86px)] leading-[0.9]">{active ? active.name : 'The Catalog'}</h1>
         <p className="mt-4 max-w-[520px] font-serif text-[16px] italic leading-relaxed text-[var(--parchment)]">
-          Made to order. Printed in small runs, shipped worldwide.
+          {active?.description || 'Made to order. Printed in small runs, shipped worldwide.'}
         </p>
+
+        {tabs.length > 0 && (
+          <nav aria-label="Collections" className="mt-10 flex flex-wrap gap-2">
+            {[{ slug: '', name: 'All' }, ...tabs].map((tab) => {
+              const selected = (active?.slug ?? '') === tab.slug
+              return (
+                <button
+                  key={tab.slug || 'all'}
+                  type="button"
+                  onClick={() => pick(tab.slug)}
+                  aria-pressed={selected}
+                  className={`border px-4 py-2 font-sans text-[11px] uppercase tracking-[0.25em] transition-colors ${
+                    selected
+                      ? 'border-[var(--bone)] bg-[var(--bone)] text-[var(--void)]'
+                      : 'border-[var(--whisper)]/40 text-[var(--faded)] hover:border-[var(--bone)] hover:text-[var(--bone)]'
+                  }`}
+                >
+                  {tab.name}
+                </button>
+              )
+            })}
+          </nav>
+        )}
 
         {loading && <p className="mt-16 font-sans text-[11px] tracking-[0.3em] uppercase text-[var(--faded)]">Loading the collection…</p>}
         {!loading && error && <p className="mt-16 font-sans text-[11px] tracking-[0.3em] uppercase text-[var(--faded)]">{error}</p>}
 
         <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-8">
-          {products.map((product, index) => (
+          {shown.map((product, index) => (
             <motion.button
               key={product.slug}
               type="button"

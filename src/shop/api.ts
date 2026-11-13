@@ -20,6 +20,7 @@ export interface ApiProduct {
   defaultOption?: string
   colors?: { name: string; id?: string; sizes?: string[]; swatch?: string; images?: string[] }[]
   sizeChart?: { headers: string[]; rows: { size: string; values: string[] }[] }
+  collections?: string[]
   featured?: boolean
   published?: boolean
 }
@@ -36,6 +37,23 @@ export async function fetchCatalogue(): Promise<ApiProduct[]> {
     if (!response.ok) return []
     const body = (await response.json()) as { products?: ApiProduct[] }
     return Array.isArray(body.products) ? body.products : []
+  } catch {
+    return []
+  }
+}
+
+export interface ShopCollection {
+  slug: string
+  name: string
+  description: string
+}
+
+export async function fetchCollections(): Promise<ShopCollection[]> {
+  try {
+    const response = await fetch(`${API_BASE}/api/collections`)
+    if (!response.ok) return []
+    const body = (await response.json()) as { collections?: ShopCollection[] }
+    return Array.isArray(body.collections) ? body.collections : []
   } catch {
     return []
   }
@@ -87,6 +105,7 @@ export function toDisplayProduct(product: ApiProduct, index: number) {
     variants: { edges: variants.map((node) => ({ node })) },
     defaultOption: product.defaultOption,
     sizeChart: product.sizeChart,
+    collections: product.collections ?? [],
     colorSwatches: Object.fromEntries(colors.filter((c) => c.swatch).map((c) => [c.name, c.swatch!])) as Record<string, string>,
     // Grouped products: each colour's own photos, shown when it is picked.
     colorImages: Object.fromEntries(colors.filter((c) => c.images?.length).map((c) => [c.name, c.images!])) as Record<string, string[]>,

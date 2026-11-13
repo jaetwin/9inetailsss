@@ -17,6 +17,7 @@ import {
   UNLOCK_COOKIE,
 } from './auth.js'
 import { maintenanceOn, setMaintenance } from './settings.js'
+import { createCollection, deleteCollection, listCollections, setCollectionPieces, updateCollection } from './collections.js'
 import { readImage, saveImage } from './images.js'
 import { listOrders, recordPendingOrder, recordStripeSession, removeOrder, type OrderAddress, type OrderItem } from './orders.js'
 import {
@@ -237,6 +238,7 @@ async function requireOpenSite(c: Context, next: Next) {
 app.use('/api/products', requireOpenSite)
 app.use('/api/products/*', requireOpenSite)
 app.use('/api/checkout', requireOpenSite)
+app.use('/api/collections', requireOpenSite)
 
 app.get('/api/products', async (c) => {
   const includeDrafts = c.req.query('all') === '1' && (await isValidSession(getCookie(c, ADMIN_COOKIE)))
@@ -247,6 +249,41 @@ app.get('/api/products/:slug', async (c) => {
   const product = await findProductForSale(c.req.param('slug') ?? '')
   if (!product) return c.json({ error: 'Not found.' }, 404)
   return c.json({ product })
+})
+
+// ── Collections ──────────────────────────────────────────────────────────────
+
+app.get('/api/collections', async (c) => c.json({ collections: await listCollections() }))
+
+app.post('/api/admin/collections', requireAdmin, async (c) => {
+  const body = await c.req.json<{ name?: unknown; description?: unknown }>().catch(() => ({}))
+  try {
+    return c.json({ collection: await createCollection(body ?? {}) }, 201)
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Could not create that collection.' }, 400)
+  }
+})
+
+app.patch('/api/admin/collections/:slug', requireAdmin, async (c) => {
+  const body = await c.req.json<{ name?: unknown; description?: unknown }>().catch(() => ({}))
+  try {
+    const found = await updateCollection(c.req.param('slug') ?? '', body ?? {})
+    return found ? c.json({ ok: true }) : c.json({ error: 'That collection no longer exists.' }, 404)
+  } catch (error) {
+    return c.json({ error: error instanceof Error ? error.message : 'Could not save that collection.' }, 400)
+  }
+})
+
+app.delete('/api/admin/collections/:slug', requireAdmin, async (c) => {
+  const removed = await deleteCollection(c.req.param('slug') ?? '')
+  return removed ? c.json({ ok: true }) : c.json({ error: 'That collection no longer exists.' }, 404)
+})
+
+app.post('/api/admin/collections/:slug/pieces', requireAdmin, async (c) => {
+  const body = await c.req.json<{ add?: unknown; remove?: unknown }>().catch(() => null)
+  const list = (value: unknown) => (Array.isArray(value) ? value.filter((s): s is string => typeof s === 'string').slice(0, 500) : [])
+  const found = await setCollectionPieces(c.req.param('slug') ?? '', list(body?.add), list(body?.remove))
+  return found ? c.json({ ok: true }) : c.json({ error: 'That collection no longer exists.' }, 404)
 })
 
 // Shows several pieces as one product (each piece becomes a colour of `lead`).
